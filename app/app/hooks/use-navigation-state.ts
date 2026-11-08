@@ -12,12 +12,17 @@ import {
   threadIdFromPath,
 } from "@/lib/chat-paths";
 import { TAB_ID } from "@/lib/tab-id";
+import { locationForPath, pathForLocation } from "@shared/routes";
 
 export interface NavigationState {
   view?: string;
   path?: string;
   publicPath?: string;
   threadId?: string;
+  vendorId?: string;
+  findingId?: string;
+  documentId?: string;
+  disputeId?: string;
 }
 
 export function useNavigationState() {
@@ -64,15 +69,19 @@ function matchesPathPrefix(pathname: string, prefix: string): boolean {
 
 export function navigationStateForPath(pathname: string): NavigationState {
   const threadId = threadIdFromPath(pathname);
+  const location = locationForPath(pathname);
   return {
     view: viewForPath(pathname),
     path: pathname,
     publicPath: appPathFromLocalRoute(pathname),
     ...(threadId ? { threadId } : {}),
+    ...(location ?? {}),
   };
 }
 
 function viewForPath(pathname: string): string {
+  const location = locationForPath(pathname);
+  if (location) return location.view;
   if (isChatPathname(pathname)) return "chat";
   if (pathname === HOME_PATH) return "home";
   if (pathname.startsWith("/database")) return "database";
@@ -111,7 +120,11 @@ function pathForView(view?: string): string {
 }
 
 export function pathForCommand(command: any): string {
-  const path = pathForView(command?.view);
+  const view = command?.view;
+  if (view === "vendor" || view === "finding" || view === "document" || view === "dispute") {
+    return pathForLocation(command);
+  }
+  const path = pathForView(view);
   if (command?.view !== "chat" && command?.view !== "ask") return path;
   const threadId =
     typeof command?.threadId === "string" ? command.threadId.trim() : "";

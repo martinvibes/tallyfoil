@@ -26,6 +26,9 @@ export const TERM_LABELS: Record<TermKey, string> = {
   billing_basis: "Billing basis",
 };
 
+/** Every term key, in display order (a tuple so it can feed `z.enum`). */
+export const TERM_KEYS = Object.keys(TERM_LABELS) as [TermKey, ...TermKey[]];
+
 export const CHECK_LABELS: Record<CheckCode, string> = {
   DUPLICATE_BILLING: "Billed twice",
   SEAT_CAP_EXCEEDED: "Seats over the cap",

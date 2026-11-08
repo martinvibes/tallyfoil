@@ -15,17 +15,17 @@ import { type RawValue, parseTermValue } from "./term-values.js";
 
 export interface TermItem {
   key: TermKey;
-  meter?: string | null;
+  meter?: string | null | undefined;
   value: RawValue;
-  effectiveFrom?: string | null;
-  effectiveTo?: string | null;
+  effectiveFrom?: string | null | undefined;
+  effectiveTo?: string | null | undefined;
   quotes: string[];
 }
 
 export interface LineItem {
-  kind?: LineKind;
+  kind?: LineKind | undefined;
   description: string;
-  meter?: string | null;
+  meter?: string | null | undefined;
   quantity: number | string;
   unitPrice: RawValue;
   amount: RawValue;
