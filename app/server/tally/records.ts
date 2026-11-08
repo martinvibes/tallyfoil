@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 
 import { fail } from "@agent-native/core/action";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 import type { UsageTotal } from "../audit/usage.js";
 import { getDb, schema } from "../db/index.js";
@@ -16,6 +17,10 @@ import { newId, nowTimestamp } from "./session.js";
 
 export type VendorRow = typeof schema.vendors.$inferSelect;
 export type DocumentRow = typeof schema.documents.$inferSelect;
+
+/** `WHERE owner_email = ? AND vendor_id = ?` for any vendor-owned table. */
+export const ofVendor = (table: { ownerEmail: AnyPgColumn; vendorId: AnyPgColumn }, owner: string, vendorId: string) =>
+  and(eq(table.ownerEmail, owner), eq(table.vendorId, vendorId));
 
 export const requireVendor = async (owner: string, vendorId: string): Promise<VendorRow> => {
   const [vendor] = await getDb()
