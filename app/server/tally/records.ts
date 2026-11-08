@@ -9,6 +9,7 @@ import { fail } from "@agent-native/core/action";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
+import type { VendorKind } from "../audit/types.js";
 import type { UsageTotal } from "../audit/usage.js";
 import { getDb, schema } from "../db/index.js";
 import type { DocumentKind } from "../db/schema.js";
@@ -29,6 +30,29 @@ export const requireVendor = async (owner: string, vendorId: string): Promise<Ve
     .where(and(eq(schema.vendors.ownerEmail, owner), eq(schema.vendors.id, vendorId)));
   if (!vendor) fail(`No vendor with id "${vendorId}". Call get-overview to list vendors.`, { errorCode: "vendor_not_found", statusCode: 404 });
   return vendor;
+};
+
+export interface NewVendor {
+  name: string;
+  kind: VendorKind;
+  isSample?: boolean;
+}
+
+/** Creates the vendor, or returns the one of the same name (case-insensitive) the user already has. */
+export const ensureVendor = async (owner: string, input: NewVendor): Promise<{ vendor: VendorRow; created: boolean }> => {
+  const db = getDb();
+  const name = input.name.trim();
+  const existing = (await db.select().from(schema.vendors).where(eq(schema.vendors.ownerEmail, owner))).find(
+    (vendor) => vendor.name.toLowerCase() === name.toLowerCase(),
+  );
+  if (existing) return { vendor: existing, created: false };
+
+  const [vendor] = await db
+    .insert(schema.vendors)
+    .values({ id: newId("ven"), ownerEmail: owner, name, kind: input.kind, isSample: input.isSample ?? false })
+    .returning();
+  if (!vendor) fail("Could not create the vendor.", { errorCode: "write_failed", statusCode: 500 });
+  return { vendor, created: true };
 };
 
 export const requireDocument = async (owner: string, documentId: string): Promise<DocumentRow> => {
