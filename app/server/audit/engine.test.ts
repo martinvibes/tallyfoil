@@ -48,7 +48,7 @@ const toInput = (vendor: SeedVendor, rules: RuleInput[] = []): AuditInput => ({
   usageTotals: vendor.usageTotals.map((usage, i) => ({ ...usage, id: `${vendor.id}_u${i}` })),
 });
 
-const seatCapRule: RuleInput = { id: "rule_seats48", ...sample.rulesForAfterScenario[0] };
+const seatCapRule: RuleInput = { id: "rule_seats48", type: "override_term", payload: sample.rulesForAfterScenario[0]!.payload };
 
 const runSample = (rules: RuleInput[] = [], asOf = sample.asOf) =>
   sample.vendors.map((vendor) => audit(toInput(vendor, rules), asOf));
@@ -201,5 +201,50 @@ describe("audit — findings carry their evidence", () => {
 
   it("is a pure function of its input", () => {
     expect(audit(toInput(cobalt), sample.asOf)).toEqual(audit(toInput(cobalt), sample.asOf));
+  });
+});
+
+describe("audit — invoice shapes beyond the sample", () => {
+  const withInvoices = (vendor: SeedVendor, invoices: SeedVendor["invoices"]): AuditInput =>
+    toInput({ ...vendor, invoices });
+
+  it("leaves tax and fee lines out of the seat and price checks", () => {
+    const feb = cobalt.invoices.find((i) => i.invoiceNumber === "INV-1034")!;
+    const taxed = {
+      ...feb,
+      totalCents: feb.totalCents + 8372,
+      lines: [...feb.lines, { kind: "other" as const, description: "Sales tax 8%", quantity: 1, unitPriceMicros: 83_720_000, amountCents: 8372 }],
+    };
+    const output = audit(withInvoices(cobalt, [taxed]), sample.asOf);
+    expect(nonDeadline([output]).map((f) => [f.check, f.amountCents])).toEqual([["PRICE_ABOVE_CONTRACT", 3840]]);
+  });
+
+  it("splits a meter billed both above usage and above rate without double counting", () => {
+    const invoice = halcyon.invoices[0]!;
+    const line = { description: "halcyon-large input tokens", meter: "halcyon-large input", quantity: 412_000_000, unitPriceMicros: 3_600_000, amountCents: 148320 };
+    const output = audit(withInvoices(halcyon, [{ ...invoice, totalCents: 148320, lines: [line] }]), sample.asOf);
+    const amounts = Object.fromEntries(output.findings.map((f) => [f.check, f.amountCents]));
+    // Billed 412M at $3.60; fair is 389M at $3.00. Overcharge $1,483.20 − $1,167.00 = $316.20.
+    expect(amounts).toEqual({ USAGE_OVERBILLED: 8280, RATE_ABOVE_CONTRACT: 23340 });
+    expect(output.totals.recoverableCents).toBe(31620);
+  });
+
+  it("reports each extra copy of an invoice against the first one", () => {
+    const july = cobalt.invoices.find((i) => i.invoiceNumber === "INV-1039")!;
+    const copies = ["INV-2001", "INV-2002"].map((invoiceNumber, i) => ({ ...july, invoiceNumber, invoiceDate: `2026-07-0${i + 2}` }));
+    const output = audit(withInvoices(cobalt, [july, ...copies]), sample.asOf);
+    const duplicates = output.findings.filter((f) => f.check === "DUPLICATE_BILLING");
+    expect(duplicates.map((f) => [f.invoiceNumber, f.math.duplicates])).toEqual([
+      ["INV-2001", "INV-1039"],
+      ["INV-2002", "INV-1039"],
+    ]);
+    expect(new Set(duplicates.map((f) => f.fingerprint)).size).toBe(2);
+  });
+
+  it("makes no price claim after a term that does not auto-renew", () => {
+    const fixedTerm = { ...cobalt, terms: cobalt.terms.map((t) => (t.key === "auto_renew" ? { ...t, valueNum: 0 } : t)) };
+    const output = audit(toInput(fixedTerm), sample.asOf);
+    expect(output.findings.some((f) => f.check === "PRICE_ABOVE_CONTRACT")).toBe(false);
+    expect(output.findings.some((f) => f.check === "RENEWAL_NOTICE_DEADLINE")).toBe(false);
   });
 });

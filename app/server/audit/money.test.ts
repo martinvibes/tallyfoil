@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   centsFromMicros,
   decimalToMicros,
+  formatCount,
   formatMicros,
   formatUsd,
+  formatUsdMicros,
   parseUsd,
   tokenCostCents,
   usdToMicros,
@@ -95,5 +97,19 @@ describe("formatMicros", () => {
     expect(formatMicros(250_000)).toBe("0.25");
     expect(formatMicros(3_000_000)).toBe("3.00");
     expect(formatMicros(3_500)).toBe("0.0035");
+  });
+});
+
+describe("formatCount", () => {
+  it("groups whole numbers by thousands", () => {
+    expect(formatCount(412_000_000)).toBe("412,000,000");
+    expect(formatCount(48)).toBe("48");
+  });
+});
+
+describe("formatUsdMicros", () => {
+  it("prints a unit price with a dollar sign", () => {
+    expect(formatUsdMicros(26_160_000)).toBe("$26.16");
+    expect(formatUsdMicros(250_000)).toBe("$0.25");
   });
 });

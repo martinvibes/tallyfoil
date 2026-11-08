@@ -32,19 +32,17 @@ const MONEY = new RegExp(`${PREFIXED}|${SUFFIXED}`, "gi");
 const MULTIPLIERS: Record<string, bigint> = { k: 1_000n, thousand: 1_000n, m: 1_000_000n, million: 1_000_000n };
 
 const toCents = (amount: string, scale: string | undefined): number => {
-  const micros = decimalToMicros(amount);
-  return centsFromMicros(micros * (scale ? MULTIPLIERS[scale.toLowerCase()] : 1n));
+  const multiplier = scale ? (MULTIPLIERS[scale.toLowerCase()] ?? 1n) : 1n;
+  return centsFromMicros(decimalToMicros(amount) * multiplier);
 };
 
 /** Every money-looking token in `text`, in reading order. Bare numbers are not money. */
 export const findMoneyTokens = (text: string): MoneyToken[] =>
-  [...text.matchAll(MONEY)].map((match) => {
+  [...text.matchAll(MONEY)].flatMap((match) => {
     const [whole, prefixedAmount, shortScale, wordScale, suffixedAmount] = match;
-    return {
-      text: whole,
-      cents: toCents(prefixedAmount ?? suffixedAmount, shortScale ?? wordScale),
-      index: match.index,
-    };
+    const amount = prefixedAmount ?? suffixedAmount;
+    if (!amount || match.index === undefined) return [];
+    return [{ text: whole, cents: toCents(amount, shortScale ?? wordScale), index: match.index }];
   });
 
 /** Passes only if every amount in `text` is one of `allowedCents`. */

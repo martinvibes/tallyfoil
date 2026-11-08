@@ -31,10 +31,13 @@ const pad = (n: number, width = 2) => String(n).padStart(width, "0");
 
 const toIso = (year: number, month: number, day: number) => `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
 
-const parts = (iso: string): [number, number, number] => {
-  const [y, m, d] = iso.split("-").map(Number);
-  return [y, m, d];
-};
+const parts = (iso: string): [number, number, number] => [
+  Number(iso.slice(0, 4)),
+  Number(iso.slice(5, 7)),
+  Number(iso.slice(8, 10)),
+];
+
+const monthName = (month: number): string => MONTH_NAMES[month - 1] ?? String(month);
 
 const toUtcMs = (iso: string) => {
   const [y, m, d] = parts(iso);
@@ -78,14 +81,14 @@ export const endOfMonth = (iso: string): string => {
 /** "2 Dec 2026". */
 export const formatLongDate = (iso: string): string => {
   const [y, m, d] = parts(iso);
-  return `${d} ${MONTH_NAMES[m - 1].slice(0, 3)} ${y}`;
+  return `${d} ${monthName(m).slice(0, 3)} ${y}`;
 };
 
 /** "February 2026" for a whole calendar month, otherwise "15 Feb 2026 – 14 Mar 2026". */
 export const periodLabel = (start: string, end: string): string => {
   if (start === startOfMonth(start) && end === endOfMonth(start)) {
     const [y, m] = parts(start);
-    return `${MONTH_NAMES[m - 1]} ${y}`;
+    return `${monthName(m)} ${y}`;
   }
   return `${formatLongDate(start)} – ${formatLongDate(end)}`;
 };
@@ -94,17 +97,18 @@ export const periodLabel = (start: string, end: string): string => {
 export const findDatesInText = (text: string): string[] => {
   const found: Array<{ index: number; iso: string }> = [];
 
-  for (const match of text.matchAll(ISO_DATE)) {
-    const iso = validIso(Number(match[1]), Number(match[2]), Number(match[3]));
-    if (iso) found.push({ index: match.index, iso });
+  const add = (index: number | undefined, iso: string | null) => {
+    if (iso && index !== undefined) found.push({ index, iso });
+  };
+
+  for (const { 1: year = "", 2: month = "", 3: day = "", index } of text.matchAll(ISO_DATE)) {
+    add(index, validIso(Number(year), Number(month), Number(day)));
   }
-  for (const match of text.matchAll(MONTH_FIRST)) {
-    const iso = validIso(Number(match[3]), monthIndex(match[1]) + 1, Number(match[2]));
-    if (iso) found.push({ index: match.index, iso });
+  for (const { 1: month = "", 2: day = "", 3: year = "", index } of text.matchAll(MONTH_FIRST)) {
+    add(index, validIso(Number(year), monthIndex(month) + 1, Number(day)));
   }
-  for (const match of text.matchAll(DAY_FIRST)) {
-    const iso = validIso(Number(match[3]), monthIndex(match[2]) + 1, Number(match[1]));
-    if (iso) found.push({ index: match.index, iso });
+  for (const { 1: day = "", 2: month = "", 3: year = "", index } of text.matchAll(DAY_FIRST)) {
+    add(index, validIso(Number(year), monthIndex(month) + 1, Number(day)));
   }
 
   return found.sort((a, b) => a.index - b.index).map((f) => f.iso);

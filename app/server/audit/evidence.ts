@@ -63,7 +63,7 @@ const normalize = (input: string): Normalized => {
   const offsets: number[] = [];
 
   for (let i = 0; i < input.length; i++) {
-    const char = input[i];
+    const char = input.charAt(i);
     if (/\s/.test(char)) {
       // Collapse whitespace runs, drop leading whitespace and the gap in "$ 12".
       if (text.length === 0 || text.endsWith(" ") || text.endsWith("$")) continue;
@@ -97,9 +97,11 @@ export const locateQuote = (text: string, quote: string): { start: number; end: 
 
   const haystack = normalize(text);
   const at = haystack.text.indexOf(needle);
-  if (at < 0) return null;
+  const start = haystack.offsets[at];
+  const last = haystack.offsets[at + needle.length - 1];
+  if (at < 0 || start === undefined || last === undefined) return null;
 
-  return { start: haystack.offsets[at], end: haystack.offsets[at + needle.length - 1] + 1 };
+  return { start, end: last + 1 };
 };
 
 // ---------------------------------------------------------------------------
@@ -122,8 +124,11 @@ const numbersIn = (text: string): bigint[] =>
   [...text.matchAll(NUMBER)].map((m) => decimalToMicros(m[0]));
 
 const percentsInBps = (text: string): number[] => [
-  ...[...text.matchAll(PERCENT)].map((m) => Number(decimalToMicros(m[1]) / 10_000n)),
-  ...[...text.matchAll(WORD_PERCENT)].flatMap((m) => (m[1] in NUMBER_WORDS ? [NUMBER_WORDS[m[1]] * 100] : [])),
+  ...[...text.matchAll(PERCENT)].flatMap(([, digits]) => (digits ? [Number(decimalToMicros(digits) / 10_000n)] : [])),
+  ...[...text.matchAll(WORD_PERCENT)].flatMap(([, word]) => {
+    const value = word === undefined ? undefined : NUMBER_WORDS[word];
+    return value === undefined ? [] : [value * 100];
+  }),
 ];
 
 const containsValue = (quote: string, value: ClaimedValue, documentSaysMillions: boolean): boolean => {

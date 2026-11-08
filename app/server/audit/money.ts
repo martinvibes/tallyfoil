@@ -30,10 +30,10 @@ export const decimalToMicros = (input: string): bigint => {
     throw new Error(`Not a decimal number: "${input}"`);
   }
 
-  const whole = BigInt((match[1] ?? "0").replaceAll(",", ""));
+  const whole = BigInt((match[1] ?? "0").replace(/,/g, ""));
   const fraction = match[2] ?? "";
   const kept = BigInt(fraction.slice(0, 6).padEnd(6, "0"));
-  const roundUp = fraction.length > 6 && fraction[6] >= "5";
+  const roundUp = fraction.charAt(6) >= "5";
   const micros = whole * MICROS_PER_UNIT + kept + (roundUp ? 1n : 0n);
   return negative ? -micros : micros;
 };
@@ -80,3 +80,11 @@ export const formatMicros = (micros: number): string => {
   const fraction = String(abs % 1_000_000).padStart(6, "0").replace(/0+$/, "").padEnd(2, "0");
   return `${sign}${groupThousands(String(whole))}.${fraction}`;
 };
+
+/** "$26.16" — a micro-dollar unit price with its currency symbol. */
+export const formatUsdMicros = (micros: number): string =>
+  micros < 0 ? `-$${formatMicros(-micros)}` : `$${formatMicros(micros)}`;
+
+/** "412,000,000" — a whole count (seats, tokens) grouped by thousands. */
+export const formatCount = (count: number): string =>
+  (count < 0 ? "-" : "") + groupThousands(String(Math.abs(Math.trunc(count))));

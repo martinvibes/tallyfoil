@@ -22,9 +22,9 @@ describe("parseUsageExport", () => {
       periodEnd: "2026-10-31",
       quantity: 389_000_000,
     });
-    expect(byMeter["halcyon-large output"].quantity).toBe(61_000_000);
-    expect(byMeter["halcyon-small input"].quantity).toBe(900_000_000);
-    expect(byMeter["halcyon-small output"].quantity).toBe(120_000_000);
+    expect(byMeter["halcyon-large output"]?.quantity).toBe(61_000_000);
+    expect(byMeter["halcyon-small input"]?.quantity).toBe(900_000_000);
+    expect(byMeter["halcyon-small output"]?.quantity).toBe(120_000_000);
     expect(result.totals).toHaveLength(4);
   });
 
@@ -54,14 +54,16 @@ describe("parseUsageExport", () => {
   it("reports missing required columns", () => {
     const result = parseUsageExport("date,model,tokens\n2026-10-01,m,5");
     expect(result).toMatchObject({ ok: false, errorCode: "missing_columns" });
-    if (!result.ok) expect(result.details.missing).toEqual(["input_tokens", "output_tokens"]);
+    if (!result.ok && result.errorCode === "missing_columns") {
+      expect(result.details.missing).toEqual(["input_tokens", "output_tokens"]);
+    }
   });
 
   it("reports the line numbers of rows with non-integer tokens", () => {
     const csv = ["date,model,input_tokens,output_tokens", "2026-10-01,m,5,1", "2026-10-02,m,5.5,1", "2026-10-03,m,abc,1"].join("\n");
     const result = parseUsageExport(csv);
     expect(result).toMatchObject({ ok: false, errorCode: "invalid_rows" });
-    if (!result.ok) expect(result.details.lines).toEqual([3, 4]);
+    if (!result.ok && result.errorCode === "invalid_rows") expect(result.details.lines).toEqual([3, 4]);
   });
 
   it("ignores blank lines", () => {

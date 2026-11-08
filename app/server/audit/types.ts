@@ -32,8 +32,17 @@ export interface TermInput {
   source?: TermSource;
 }
 
+/**
+ * What a bill line charges for. `seats` lines feed the seat and price checks,
+ * `usage` lines (with a meter) feed the metered checks, `other` lines (tax,
+ * fees, credits) are never audited. When absent: a line with a meter is
+ * `usage`, any other line is `seats`.
+ */
+export type LineKind = "seats" | "usage" | "other";
+
 export interface InvoiceLineInput {
   id: string;
+  kind?: LineKind | null;
   description: string;
   meter?: string | null;
   quantity: number;
@@ -160,6 +169,7 @@ export interface ExplainedFinding {
 export interface AuditTotals {
   recoverableCents: number;
   atRiskCents: number;
+  /** Findings that carry money; deadlines are counted in `atRiskCents` instead. */
   findingCount: number;
   byCheckCents: Partial<Record<CheckCode, number>>;
 }
