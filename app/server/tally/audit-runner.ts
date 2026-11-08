@@ -7,7 +7,7 @@
 import { and, asc, eq } from "drizzle-orm";
 
 import { ENGINE_VERSION, audit } from "../audit/engine.js";
-import { formatCents } from "../audit/money.js";
+import { formatUsd } from "../audit/money.js";
 import type { AuditInput, Finding, RuleInput } from "../audit/types.js";
 import { getDb, schema } from "../db/index.js";
 import { type LedgerTotals, ledgerTotals } from "./ledger.js";
@@ -223,14 +223,14 @@ export const describeRun = (run: AuditRunResult): string => {
   const names = run.vendors.map((v) => v.vendorName).join(" and ") || "no vendors";
   const parts = [
     `Audited ${names}: ${run.after.findingCount} finding${run.after.findingCount === 1 ? "" : "s"}, ` +
-      `${formatCents(run.after.recoverableCents)} recoverable, ${formatCents(run.after.atRiskCents)} at risk.`,
+      `${formatUsd(run.after.recoverableCents)} recoverable, ${formatUsd(run.after.atRiskCents)} at risk.`,
   ];
   if (run.before.recoverableCents !== run.after.recoverableCents) {
-    parts.push(`Recoverable moved from ${formatCents(run.before.recoverableCents)} to ${formatCents(run.after.recoverableCents)}.`);
+    parts.push(`Recoverable moved from ${formatUsd(run.before.recoverableCents)} to ${formatUsd(run.after.recoverableCents)}.`);
   }
   const explained = run.vendors.filter((v) => v.explainedCount > 0);
   for (const v of explained) {
-    parts.push(`${v.vendorName}: your rules explain ${v.explainedCount} finding${v.explainedCount === 1 ? "" : "s"} (${formatCents(v.explainedCents)}).`);
+    parts.push(`${v.vendorName}: your rules explain ${v.explainedCount} finding${v.explainedCount === 1 ? "" : "s"} (${formatUsd(v.explainedCents)}).`);
   }
   const empty = run.vendors.filter((v) => v.empty).map((v) => v.vendorName);
   if (empty.length > 0) parts.push(`No bills recorded yet for ${empty.join(", ")}.`);
