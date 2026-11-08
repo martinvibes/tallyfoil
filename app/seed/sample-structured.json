@@ -1,0 +1,347 @@
+{
+  "note": "Ground truth of the sample set in engine units (cents, micros, tokens). Used by engine.test.ts. Evidence is omitted here; the engine does not need it.",
+  "asOf": "2026-11-09",
+  "vendors": [
+    {
+      "id": "v_cobalt",
+      "name": "Cobalt Workspace",
+      "kind": "seat_subscription",
+      "terms": [
+        {
+          "key": "seat_price",
+          "valueNum": 24000000
+        },
+        {
+          "key": "seat_cap",
+          "valueNum": 40
+        },
+        {
+          "key": "renewal_uplift_cap_bps",
+          "valueNum": 500
+        },
+        {
+          "key": "term_start",
+          "valueDate": "2025-02-01"
+        },
+        {
+          "key": "term_end",
+          "valueDate": "2026-01-31"
+        },
+        {
+          "key": "auto_renew",
+          "valueNum": 1
+        },
+        {
+          "key": "notice_days",
+          "valueNum": 60
+        }
+      ],
+      "invoices": [
+        {
+          "invoiceNumber": "INV-1031",
+          "invoiceDate": "2025-11-01",
+          "periodStart": "2025-11-01",
+          "periodEnd": "2025-11-30",
+          "totalCents": 96000,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 40,
+              "unitPriceMicros": 24000000,
+              "amountCents": 96000
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1032",
+          "invoiceDate": "2025-12-01",
+          "periodStart": "2025-12-01",
+          "periodEnd": "2025-12-31",
+          "totalCents": 96000,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 40,
+              "unitPriceMicros": 24000000,
+              "amountCents": 96000
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1033",
+          "invoiceDate": "2026-01-01",
+          "periodStart": "2026-01-01",
+          "periodEnd": "2026-01-31",
+          "totalCents": 96000,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 40,
+              "unitPriceMicros": 24000000,
+              "amountCents": 96000
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1034",
+          "invoiceDate": "2026-02-01",
+          "periodStart": "2026-02-01",
+          "periodEnd": "2026-02-28",
+          "totalCents": 104640,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 40,
+              "unitPriceMicros": 26160000,
+              "amountCents": 104640
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1035",
+          "invoiceDate": "2026-03-01",
+          "periodStart": "2026-03-01",
+          "periodEnd": "2026-03-31",
+          "totalCents": 104640,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 40,
+              "unitPriceMicros": 26160000,
+              "amountCents": 104640
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1036",
+          "invoiceDate": "2026-04-01",
+          "periodStart": "2026-04-01",
+          "periodEnd": "2026-04-30",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1037",
+          "invoiceDate": "2026-05-01",
+          "periodStart": "2026-05-01",
+          "periodEnd": "2026-05-31",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1038",
+          "invoiceDate": "2026-06-01",
+          "periodStart": "2026-06-01",
+          "periodEnd": "2026-06-30",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1039",
+          "invoiceDate": "2026-07-01",
+          "periodStart": "2026-07-01",
+          "periodEnd": "2026-07-31",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1040",
+          "invoiceDate": "2026-07-06",
+          "periodStart": "2026-07-01",
+          "periodEnd": "2026-07-31",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1041",
+          "invoiceDate": "2026-08-01",
+          "periodStart": "2026-08-01",
+          "periodEnd": "2026-08-31",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1042",
+          "invoiceDate": "2026-09-01",
+          "periodStart": "2026-09-01",
+          "periodEnd": "2026-09-30",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        },
+        {
+          "invoiceNumber": "INV-1043",
+          "invoiceDate": "2026-10-01",
+          "periodStart": "2026-10-01",
+          "periodEnd": "2026-10-31",
+          "totalCents": 125568,
+          "lines": [
+            {
+              "description": "Cobalt Workspace Business - seats",
+              "quantity": 48,
+              "unitPriceMicros": 26160000,
+              "amountCents": 125568
+            }
+          ]
+        }
+      ],
+      "usageTotals": []
+    },
+    {
+      "id": "v_halcyon",
+      "name": "Halcyon AI",
+      "kind": "usage_metered",
+      "terms": [
+        {
+          "key": "meter_rate",
+          "meter": "halcyon-large input",
+          "valueNum": 3000000
+        },
+        {
+          "key": "meter_rate",
+          "meter": "halcyon-large output",
+          "valueNum": 15000000
+        },
+        {
+          "key": "meter_rate",
+          "meter": "halcyon-small input",
+          "valueNum": 250000
+        },
+        {
+          "key": "meter_rate",
+          "meter": "halcyon-small output",
+          "valueNum": 1250000
+        },
+        {
+          "key": "billing_basis",
+          "valueText": "usage_export"
+        }
+      ],
+      "invoices": [
+        {
+          "invoiceNumber": "HAI-26-1007",
+          "invoiceDate": "2026-11-03",
+          "periodStart": "2026-10-01",
+          "periodEnd": "2026-10-31",
+          "totalCents": 257100,
+          "lines": [
+            {
+              "description": "halcyon-large input tokens",
+              "meter": "halcyon-large input",
+              "quantity": 412000000,
+              "unitPriceMicros": 3000000,
+              "amountCents": 123600
+            },
+            {
+              "description": "halcyon-large output tokens",
+              "meter": "halcyon-large output",
+              "quantity": 61000000,
+              "unitPriceMicros": 15000000,
+              "amountCents": 91500
+            },
+            {
+              "description": "halcyon-small input tokens",
+              "meter": "halcyon-small input",
+              "quantity": 900000000,
+              "unitPriceMicros": 300000,
+              "amountCents": 27000
+            },
+            {
+              "description": "halcyon-small output tokens",
+              "meter": "halcyon-small output",
+              "quantity": 120000000,
+              "unitPriceMicros": 1250000,
+              "amountCents": 15000
+            }
+          ]
+        }
+      ],
+      "usageTotals": [
+        {
+          "meter": "halcyon-large input",
+          "periodStart": "2026-10-01",
+          "periodEnd": "2026-10-31",
+          "quantity": 389000000
+        },
+        {
+          "meter": "halcyon-large output",
+          "periodStart": "2026-10-01",
+          "periodEnd": "2026-10-31",
+          "quantity": 61000000
+        },
+        {
+          "meter": "halcyon-small input",
+          "periodStart": "2026-10-01",
+          "periodEnd": "2026-10-31",
+          "quantity": 900000000
+        },
+        {
+          "meter": "halcyon-small output",
+          "periodStart": "2026-10-01",
+          "periodEnd": "2026-10-31",
+          "quantity": 120000000
+        }
+      ]
+    }
+  ],
+  "rulesForAfterScenario": [
+    {
+      "vendorId": "v_cobalt",
+      "type": "override_term",
+      "payload": {
+        "key": "seat_cap",
+        "value": 48,
+        "effectiveFrom": "2026-04-01"
+      },
+      "reason": "We approved 48 seats by email on 28 March 2026."
+    }
+  ]
+}
