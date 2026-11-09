@@ -46,8 +46,8 @@ Recording a clip does **not** submit. Technical problems don't extend the deadli
 > an AI vendor) with known errors, so the totals can be verified by hand. The recording
 > ends with a real bill of mine.
 >
-> **Pre-existing work:** built during the hackathon (from Nov 6, 2026) on the Agent-Native
-> Chat template (`@agent-native/core` <version>). Libraries: Drizzle, zod, pdfjs-dist,
+> **Pre-existing work:** built in two days during the hackathon (8–9 Nov 2026) on the Agent-Native
+> Chat template (`@agent-native/core` 0.226.0). Libraries: Drizzle, zod, pdfjs-dist,
 > papaparse, vitest, Tailwind. No code from earlier projects.
 >
 > Team: Martin Chinedu Machiebe (solo, Cypher Labs).

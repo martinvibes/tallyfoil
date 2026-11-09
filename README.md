@@ -137,7 +137,7 @@ badge in the UI.
 
 ## Pre-existing work
 
-Built during the Builder.io Agent-Native Hackathon (from 6 Nov 2026) on the Agent-Native
+Built in two days during the Builder.io Agent-Native Hackathon (8–9 Nov 2026) on the Agent-Native
 Chat template (`@agent-native/core` 0.226.0). Libraries: Drizzle, zod, pdfjs-dist,
 papaparse, vitest, Tailwind. No code from earlier projects. The planning docs that
 guided the build are in [`docs/`](docs/).
