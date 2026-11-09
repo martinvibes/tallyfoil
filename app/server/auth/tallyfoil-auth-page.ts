@@ -2,123 +2,85 @@ import type { AuthPageProps, ResetPasswordPageProps } from "@agent-native/core/s
 import { renderAuthPage, renderAuthResetPasswordPage } from "@agent-native/toolkit/app/auth/server";
 
 /**
- * Tallyfoil's sign-in and reset pages.
+ * Tallyfoil's sign-in and reset cards.
  *
  * The framework renders the auth card and hydrates it with React, so we never
- * touch its markup or props. We append our own nodes after it, inside the root:
- * React leaves trailing root-level nodes alone during hydration. Those nodes are
- * a stylesheet, the story panel (what Tallyfoil does, shown with the labeled
- * sample audit), and a small script that adds show/hide toggles to password
- * fields, a live strength and match hint, and a busy state on submit.
+ * touch its markup or props, and the page around the card stays as the
+ * framework draws it. We append a stylesheet for the card and a small script
+ * after it, inside the root (React leaves trailing root-level nodes alone during
+ * hydration). The script adds show/hide toggles to password fields, a live
+ * strength and match hint, and a busy state on submit.
  */
 
 const FONTS =
   '<link rel="preconnect" href="https://fonts.googleapis.com"/>' +
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>' +
-  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400..600&display=swap"/>';
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Inter:wght@400..600&display=swap"/>';
 
+/** Card styles only. The page background stays the framework's. */
 const STYLES = String.raw`
 #agent-native-auth-root {
-  --tf-paper: hsl(40 45% 94%);
-  --tf-card: hsl(43 100% 99%);
-  --tf-ink: hsl(36 10% 10%);
-  --tf-muted: hsl(35 9% 39%);
-  --tf-rule: hsl(39 31% 84%);
-  --tf-shade: hsl(40 40% 90%);
-  --tf-notch: hsl(17 88% 40%);
+  --tf-card: #131211;
+  --tf-field: #0d0c0b;
+  --tf-ink: hsl(40 37% 91%);
+  --tf-muted: hsl(38 10% 62%);
+  --tf-rule: rgba(246, 239, 228, 0.1);
+  --tf-shade: rgba(246, 239, 228, 0.05);
+  --tf-notch: hsl(17 84% 52%);
   --tf-on-notch: #fff;
-  --tf-verified: hsl(135 26% 33%);
-  --tf-amber: hsl(36 71% 42%);
-  --tf-danger: hsl(2 64% 42%);
+  --tf-verified: hsl(136 30% 58%);
+  --tf-amber: hsl(38 70% 60%);
+  --tf-danger: hsl(2 80% 68%);
   --tf-serif: "Fraunces", Georgia, serif;
-  --tf-mono: "IBM Plex Mono", ui-monospace, monospace;
   --tf-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
-@media (prefers-color-scheme: dark) {
-  #agent-native-auth-root {
-    --tf-paper: hsl(43 19% 7%);
-    --tf-card: hsl(40 17% 10%);
-    --tf-ink: hsl(40 37% 89%);
-    --tf-muted: hsl(38 12% 59%);
-    --tf-rule: hsl(39 14% 20%);
-    --tf-shade: hsl(38 15% 14%);
-    --tf-notch: hsl(18 81% 56%);
-    --tf-on-notch: hsl(43 19% 7%);
-    --tf-verified: hsl(136 23% 54%);
-    --tf-amber: hsl(38 65% 57%);
-    --tf-danger: hsl(2 72% 66%);
-  }
-}
-body { display: block; padding: 0; min-height: 100vh; background: hsl(40 45% 94%); }
-@media (prefers-color-scheme: dark) {
-  body { background: hsl(43 19% 7%); }
-  #agent-native-auth-root .card { box-shadow: 0 30px 70px -38px rgba(0,0,0,0.9) !important; }
-}
-#agent-native-auth-root { min-height: 100vh; min-height: 100svh; background: var(--tf-paper); color: var(--tf-ink); font-family: var(--tf-sans); -webkit-font-smoothing: antialiased; }
-
-/* Layout: story on the left, the card on paper on the right. */
-.auth-root { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); }
-.auth-root > .auth-page { grid-column: 2; grid-row: 1; min-height: 100svh; padding: 2.5rem 1.5rem; }
-.auth-root > .tf-story { grid-column: 1; grid-row: 1; }
-.auth-wave-background { display: none; }
-html[data-agent-native-embedded="1"] .auth-root { grid-template-columns: minmax(0, 1fr); }
-html[data-agent-native-embedded="1"] .auth-root > .auth-page { grid-column: 1; }
-html[data-agent-native-embedded="1"] .tf-story { display: none; }
-
-/* The card. */
 #agent-native-auth-root .card {
-  max-width: 420px; padding: 2.25rem 2rem 2rem; border-radius: 18px;
-  background: var(--tf-card); border: 1px solid var(--tf-rule);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.5) inset, 0 30px 70px -38px rgba(70,45,10,0.38);
-  animation: tf-rise 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  position: relative; max-width: 420px; padding: 2.25rem 2rem 2rem; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent 40%), var(--tf-card);
+  border: 1px solid var(--tf-rule); color: var(--tf-ink); font-family: var(--tf-sans);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 40px 90px -30px rgba(0,0,0,0.85);
+  -webkit-font-smoothing: antialiased;
+  animation: tf-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 #agent-native-auth-root .card::before {
-  content: ""; display: block; width: 44px; height: 10px; margin-bottom: 1.25rem;
-  background: var(--tf-notch);
-  clip-path: polygon(0 100%, 12.5% 0, 25% 100%, 37.5% 0, 50% 100%, 62.5% 0, 75% 100%, 87.5% 0, 100% 100%, 100% 100%, 0 100%);
+  content: ""; position: absolute; top: 0; left: 2rem; right: 2rem; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--tf-notch), transparent); opacity: 0.7;
 }
 #agent-native-auth-root h1 { font-family: var(--tf-serif); font-weight: 500; font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; color: var(--tf-ink); margin-bottom: 0.375rem; }
 #agent-native-auth-root .subtitle { font-size: 0.9rem; color: var(--tf-muted); margin-bottom: 1.5rem; }
-#agent-native-auth-root .tabs { padding: 4px; margin-bottom: 1.5rem; background: var(--tf-shade); border-radius: 12px; }
-#agent-native-auth-root .tab { padding: 0.55rem 0.75rem; border-radius: 9px; color: var(--tf-muted); font-size: 0.85rem; font-weight: 500; transition: background 160ms, color 160ms, box-shadow 160ms; }
-#agent-native-auth-root .tab.active { background: var(--tf-card); color: var(--tf-ink); box-shadow: 0 1px 2px rgba(40,25,5,0.12), 0 0 0 1px var(--tf-rule); }
+#agent-native-auth-root .tabs { padding: 4px; margin-bottom: 1.5rem; background: var(--tf-shade); border: 1px solid var(--tf-rule); border-radius: 12px; }
+#agent-native-auth-root .tab { padding: 0.55rem 0.75rem; border-radius: 9px; color: var(--tf-muted); font-size: 0.85rem; font-weight: 500; transition: background 160ms, color 160ms; }
+#agent-native-auth-root .tab.active { background: rgba(246,239,228,0.1); color: var(--tf-ink); box-shadow: 0 1px 2px rgba(0,0,0,0.4); }
 #agent-native-auth-root .tab:hover:not(.active) { color: var(--tf-ink); }
 #agent-native-auth-root label { font-size: 0.8125rem; font-weight: 500; color: var(--tf-ink); margin-bottom: 0.4rem; }
 #agent-native-auth-root input:not([type="checkbox"]):not([type="radio"]) {
   display: block; height: 2.75rem; padding: 0 0.9rem; margin-bottom: 1rem;
-  background: var(--tf-paper); color: var(--tf-ink); border: 1px solid var(--tf-rule); border-radius: 11px;
-  font: 400 0.9375rem/1 var(--tf-sans); transition: border-color 140ms, box-shadow 140ms, background 140ms;
+  background: var(--tf-field); color: var(--tf-ink); border: 1px solid var(--tf-rule); border-radius: 11px;
+  font: 400 0.9375rem/1 var(--tf-sans); transition: border-color 140ms, box-shadow 140ms;
 }
-#agent-native-auth-root input::placeholder { color: var(--tf-muted); opacity: 0.7; }
-#agent-native-auth-root input:hover { border-color: color-mix(in srgb, var(--tf-ink) 25%, var(--tf-rule)); }
-#agent-native-auth-root input:focus { background: var(--tf-card); border-color: var(--tf-notch); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tf-notch) 14%, transparent); }
+#agent-native-auth-root input::placeholder { color: var(--tf-muted); opacity: 0.6; }
+#agent-native-auth-root input:hover { border-color: rgba(246,239,228,0.2); }
+#agent-native-auth-root input:focus { border-color: var(--tf-notch); box-shadow: 0 0 0 4px color-mix(in srgb, var(--tf-notch) 18%, transparent); }
 #agent-native-auth-root input:user-invalid { border-color: var(--tf-danger); }
 #agent-native-auth-root input[data-tf-eye] { padding-right: 3rem; }
 #agent-native-auth-root button[type="submit"], #agent-native-auth-root .btn-primary {
   position: relative; height: 2.875rem; margin-top: 0.5rem; padding: 0 1rem; border-radius: 11px;
   background: var(--tf-notch); color: var(--tf-on-notch); font: 600 0.9375rem/1 var(--tf-sans); letter-spacing: 0.01em;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset, 0 10px 24px -12px color-mix(in srgb, var(--tf-notch) 80%, transparent);
-  transition: filter 140ms, transform 80ms, box-shadow 140ms;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset, 0 12px 28px -12px color-mix(in srgb, var(--tf-notch) 85%, transparent);
+  transition: filter 140ms, transform 80ms;
 }
-#agent-native-auth-root button[type="submit"]:hover, #agent-native-auth-root .btn-primary:hover { background: var(--tf-notch); filter: brightness(1.08); }
+#agent-native-auth-root button[type="submit"]:hover, #agent-native-auth-root .btn-primary:hover { background: var(--tf-notch); filter: brightness(1.1); }
 #agent-native-auth-root button[type="submit"]:active, #agent-native-auth-root .btn-primary:active { transform: translateY(1px); }
 #agent-native-auth-root button:focus-visible { outline: 2px solid var(--tf-notch); outline-offset: 2px; }
 #agent-native-auth-root button[type="submit"]:disabled { opacity: 0.6; }
 #agent-native-auth-root button[data-tf-busy] { color: transparent !important; pointer-events: none; }
 #agent-native-auth-root button[data-tf-busy]::after {
   content: ""; position: absolute; inset: 0; margin: auto; width: 1.15rem; height: 1.15rem; border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--tf-on-notch) 35%, transparent); border-top-color: var(--tf-on-notch);
-  animation: tf-spin 700ms linear infinite;
+  border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff; animation: tf-spin 700ms linear infinite;
 }
-#agent-native-auth-root .btn-secondary, #agent-native-auth-root .btn-google {
-  height: 2.75rem; border-radius: 11px; background: var(--tf-card); color: var(--tf-ink); border: 1px solid var(--tf-rule); font-weight: 500;
-}
-#agent-native-auth-root .btn-secondary:hover, #agent-native-auth-root .btn-google:hover { background: var(--tf-shade); color: var(--tf-ink); }
-#agent-native-auth-root .divider { color: var(--tf-muted); }
-#agent-native-auth-root .divider::before, #agent-native-auth-root .divider::after { background: var(--tf-rule); }
-#agent-native-auth-root .link-button, #agent-native-auth-root .back { color: var(--tf-muted); }
-#agent-native-auth-root .link-button:hover, #agent-native-auth-root .back:hover { color: var(--tf-ink); }
-#agent-native-auth-root .legal-note, #agent-native-auth-root .legal-note a { color: var(--tf-muted); }
+#agent-native-auth-root .btn-secondary, #agent-native-auth-root .btn-google { height: 2.75rem; border-radius: 11px; }
+#agent-native-auth-root .link-button { color: var(--tf-muted); }
+#agent-native-auth-root .link-button:hover { color: var(--tf-ink); }
 
 /* Errors and success: a real alert, not a line of red text. */
 #agent-native-auth-root .msg.show {
@@ -127,23 +89,12 @@ html[data-agent-native-embedded="1"] .tf-story { display: none; }
 }
 #agent-native-auth-root .msg.show::before {
   flex: none; display: grid; place-items: center; width: 1.25rem; height: 1.25rem; border-radius: 50%;
-  font: 700 0.75rem/1 var(--tf-sans); color: var(--tf-card);
+  font: 700 0.75rem/1 var(--tf-sans); color: #111;
 }
-#agent-native-auth-root .msg.show.error { color: var(--tf-danger); background: color-mix(in srgb, var(--tf-danger) 9%, var(--tf-card)); border: 1px solid color-mix(in srgb, var(--tf-danger) 30%, transparent); animation-name: tf-shake; }
+#agent-native-auth-root .msg.show.error { color: var(--tf-danger); background: color-mix(in srgb, var(--tf-danger) 10%, var(--tf-card)); border: 1px solid color-mix(in srgb, var(--tf-danger) 32%, transparent); animation-name: tf-shake; }
 #agent-native-auth-root .msg.show.error::before { content: "!"; background: var(--tf-danger); }
-#agent-native-auth-root .msg.show.success { color: var(--tf-verified); background: color-mix(in srgb, var(--tf-verified) 10%, var(--tf-card)); border: 1px solid color-mix(in srgb, var(--tf-verified) 30%, transparent); }
+#agent-native-auth-root .msg.show.success { color: var(--tf-verified); background: color-mix(in srgb, var(--tf-verified) 10%, var(--tf-card)); border: 1px solid color-mix(in srgb, var(--tf-verified) 32%, transparent); }
 #agent-native-auth-root .msg.show.success::before { content: "\2713"; background: var(--tf-verified); }
-#agent-native-auth-root .google-error.show { color: var(--tf-danger); }
-#agent-native-auth-root .verification-panel, #agent-native-auth-root .upgrade-note.show { background: var(--tf-shade); border-color: var(--tf-rule); color: var(--tf-ink); }
-#agent-native-auth-root .verification-kicker { color: var(--tf-verified); }
-#agent-native-auth-root .verification-copy, #agent-native-auth-root .verification-copy strong { color: var(--tf-ink); }
-#agent-native-auth-root .verification-note, #agent-native-auth-root .progress-step { color: var(--tf-muted); }
-#agent-native-auth-root .progress-step span { background: var(--tf-card); border-color: var(--tf-rule); color: var(--tf-muted); }
-#agent-native-auth-root .progress-step.complete span { background: var(--tf-verified); border-color: var(--tf-verified); color: var(--tf-card); }
-#agent-native-auth-root .progress-step.current span { background: var(--tf-ink); border-color: var(--tf-ink); color: var(--tf-card); box-shadow: 0 0 0 4px var(--tf-shade); }
-#agent-native-auth-root .progress-step.complete, #agent-native-auth-root .progress-step.current { color: var(--tf-ink); }
-.locale-trigger { color: var(--tf-muted); border-radius: 8px; }
-.locale-trigger:hover { color: var(--tf-ink); }
 
 /* Password eye: a sibling button laid over the end of its field. */
 .tf-eye {
@@ -165,132 +116,17 @@ html[data-agent-native-embedded="1"] .tf-story { display: none; }
 .tf-hint[data-tone="warn"] { color: var(--tf-amber); }
 .tf-hint[data-tone="bad"] { color: var(--tf-danger); }
 
-/* The story panel. */
-.tf-story {
-  position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 2.5rem;
-  min-height: 100svh; padding: clamp(2rem, 4.5vw, 4rem);
-  background:
-    radial-gradient(120% 80% at 50% 110%, rgba(69, 212, 191, 0.10), transparent 60%),
-    radial-gradient(80% 60% at 50% -20%, rgba(255, 77, 46, 0.12), transparent 60%),
-    #0b0b0d;
-  color: #f6efe4; font-family: var(--tf-sans);
-}
-.tf-brand { display: flex; align-items: center; gap: 0.7rem; font: 600 1.05rem/1 var(--tf-sans); letter-spacing: -0.01em; }
-.tf-brand svg { width: 1.75rem; height: 1.75rem; }
-.tf-copy { max-width: 34rem; }
-.tf-eyebrow { font: 500 0.7rem/1 var(--tf-mono); letter-spacing: 0.2em; text-transform: uppercase; color: rgba(246,239,228,0.45); }
-.tf-headline {
-  margin: 1rem 0 1rem; font: 400 clamp(2.1rem, 3.6vw, 3.25rem)/1.05 var(--tf-serif); letter-spacing: -0.025em;
-  background: linear-gradient(180deg, #ffffff 25%, #a8a39b 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-.tf-headline em { font-style: italic; color: #ff6a42; -webkit-text-fill-color: #ff6a42; }
-.tf-lede { font-size: 1rem; line-height: 1.55; color: rgba(246,239,228,0.68); max-width: 30rem; }
-.tf-lede b { color: #f6efe4; font-weight: 500; }
-.tf-specimen {
-  max-width: 34rem; padding: 1.25rem 1.25rem 1.1rem; border-radius: 16px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015)); border: 1px solid rgba(255,255,255,0.09);
-  box-shadow: 0 40px 80px -40px rgba(0,0,0,0.8);
-  animation: tf-rise 700ms 120ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-.tf-spec-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; font: 500 0.7rem/1 var(--tf-mono); letter-spacing: 0.14em; text-transform: uppercase; color: rgba(246,239,228,0.55); }
-.tf-sample { padding: 0.25rem 0.45rem; border: 1px dashed rgba(214,160,72,0.7); border-radius: 4px; color: #e0b062; letter-spacing: 0.12em; }
-.tf-mirror { display: block; width: 100%; height: auto; margin: 0.9rem 0 0.4rem; }
-.tf-mirror .tf-gap { transform-box: fill-box; transform-origin: 50% 100%; animation: tf-grow 900ms 400ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-.tf-quotes { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.6rem; }
-.tf-quote { padding: 0.65rem 0.75rem; border-radius: 10px; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.07); }
-.tf-quote p { font: 500 0.625rem/1 var(--tf-mono); letter-spacing: 0.16em; text-transform: uppercase; color: rgba(246,239,228,0.45); margin-bottom: 0.45rem; }
-.tf-quote q { display: block; font: 400 0.75rem/1.45 var(--tf-mono); color: rgba(246,239,228,0.85); quotes: "\201C" "\201D"; }
-.tf-quote.tf-bill { border-color: rgba(255,106,66,0.35); }
-.tf-quote.tf-bill mark { background: rgba(255,106,66,0.18); color: #ff8a66; border-radius: 3px; padding: 0 2px; }
-.tf-total { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; padding-top: 0.9rem; border-top: 1px dashed rgba(255,255,255,0.12); }
-.tf-total strong { font: 400 2.25rem/1 var(--tf-serif); letter-spacing: -0.02em; background: linear-gradient(180deg, #ffffff 25%, #a8a39b 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.tf-total span { font-size: 0.78rem; color: rgba(246,239,228,0.55); text-align: right; }
-.tf-foot { font: 400 0.72rem/1.5 var(--tf-mono); color: rgba(246,239,228,0.38); letter-spacing: 0.04em; }
-
 @keyframes tf-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes tf-grow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
 @keyframes tf-pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
-@keyframes tf-shake { 0% { opacity: 0; transform: translateX(0); } 25% { opacity: 1; transform: translateX(-5px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } 100% { transform: none; } }
+@keyframes tf-shake { 0% { opacity: 0; } 25% { opacity: 1; transform: translateX(-5px); } 50% { transform: translateX(4px); } 75% { transform: translateX(-2px); } 100% { transform: none; } }
 @keyframes tf-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   #agent-native-auth-root *, #agent-native-auth-root *::before, #agent-native-auth-root *::after { animation: none !important; transition: none !important; }
 }
-
-/* Phones and narrow windows: a short night header, then the card. */
-@media (max-width: 959px) {
-  .auth-root { grid-template-columns: minmax(0, 1fr); }
-  .auth-root > .tf-story { grid-row: 1; min-height: 0; gap: 1.25rem; padding: 1.5rem 1.25rem 1.75rem; }
-  .auth-root > .auth-page { grid-column: 1; grid-row: 2; min-height: 0; padding: 1.5rem 1rem 3rem; justify-content: flex-start; }
-  .tf-headline { font-size: 1.9rem; margin: 0.6rem 0 0.5rem; }
-  .tf-lede { font-size: 0.9rem; }
-  .tf-specimen, .tf-foot { display: none; }
-  #agent-native-auth-root .card { margin-top: -2.25rem; padding: 1.75rem 1.25rem 1.5rem; }
-  .locale-picker .locale-trigger { color: rgba(246,239,228,0.6); }
+@media (max-width: 480px) {
+  #agent-native-auth-root .card { padding: 1.75rem 1.25rem 1.5rem; }
 }
 `;
-
-/** The notch mark: a tally ledger torn along a zigzag. */
-const MARK =
-  '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="2" width="18" height="20" rx="2" fill="currentColor" opacity="0.14"/><path d="M3 12 L6 9.5 L9 12 L12 9.5 L15 12 L18 9.5 L21 12" fill="none" stroke="#ff6a42" stroke-width="2" stroke-linejoin="round"/><path d="M7 4v4M11 4v4M15 4v4M7 16v4M11 16v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-
-/**
- * The sample's Cobalt Workspace bills, Nov 2025 to Oct 2026, as billed ÷ agreed
- * (from seed/expected-findings.json): three honest months, a price above the
- * 5% cap from February, seats over the cap from April, July billed twice.
- */
-const COBALT_RATIOS = [1, 1, 1, 1.038, 1.038, 1.246, 1.246, 1.246, 2.3, 1.246, 1.246, 1.246];
-const MONTH_INITIALS = ["N", "D", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O"];
-
-function mirrorSvg(): string {
-  const mid = 70;
-  const base = 24;
-  const step = 29;
-  const width = 16;
-  const bars = COBALT_RATIOS.map((ratio, i) => {
-    const x = 10 + i * step;
-    const billed = base * ratio;
-    const gap = billed - base;
-    const label = `<text x="${x + width / 2}" y="${mid + base + 18}" text-anchor="middle" fill="rgba(246,239,228,0.38)" font-size="8" font-family="IBM Plex Mono, monospace">${MONTH_INITIALS[i]}</text>`;
-    return (
-      `<rect x="${x}" y="${mid - 2 - base}" width="${width}" height="${base}" rx="2" fill="rgba(246,239,228,0.78)"/>` +
-      (gap > 0
-        ? `<rect class="tf-gap" style="animation-delay:${400 + i * 45}ms" x="${x}" y="${(mid - 2 - billed).toFixed(1)}" width="${width}" height="${gap.toFixed(1)}" rx="2" fill="#ff5a36" filter="url(#tf-glow)"/>`
-        : "") +
-      `<rect x="${x}" y="${mid + 2}" width="${width}" height="${base}" rx="2" fill="rgba(69,212,191,0.32)"/>` +
-      label
-    );
-  }).join("");
-  const julyX = 10 + 8 * step + width / 2;
-  return (
-    `<svg class="tf-mirror" viewBox="0 0 400 118" role="img" aria-label="Cobalt Workspace sample: billed above the contract in 9 of 12 months; July was billed twice.">` +
-    `<defs><filter id="tf-glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>` +
-    `<line x1="0" x2="400" y1="${mid}" y2="${mid}" stroke="rgba(246,239,228,0.18)" stroke-dasharray="2 3"/>` +
-    bars +
-    `<text x="${julyX}" y="10" text-anchor="middle" fill="#ff8a66" font-size="8" font-family="IBM Plex Mono, monospace">billed twice</text>` +
-    `<text x="398" y="${mid - 8}" text-anchor="end" fill="rgba(246,239,228,0.45)" font-size="7" font-family="IBM Plex Mono, monospace">BILLED</text>` +
-    `<text x="398" y="${mid + 14}" text-anchor="end" fill="rgba(69,212,191,0.75)" font-size="7" font-family="IBM Plex Mono, monospace">AGREED</text>` +
-    `</svg>`
-  );
-}
-
-const STORY = `<aside class="tf-story" aria-label="About Tallyfoil">
-  <div class="tf-brand">${MARK}<span>Tallyfoil</span></div>
-  <div class="tf-copy">
-    <p class="tf-eyebrow">Vendor bill audit</p>
-    <h2 class="tf-headline">The contract capped it at 5%. <em>The bill went up 9%.</em></h2>
-    <p class="tf-lede">Tallyfoil reads your contracts and invoices, quotes the exact lines that disagree, and drafts the dispute. <b>The AI reads; code decides the money.</b></p>
-  </div>
-  <figure class="tf-specimen">
-    <figcaption class="tf-spec-head"><span>Cobalt Workspace · 12 bills</span><span class="tf-sample">Sample audit</span></figcaption>
-    ${mirrorSvg()}
-    <div class="tf-quotes">
-      <div class="tf-quote"><p>The contract</p><q>…than 5% over the fees in effect during the immediately preceding term.</q></div>
-      <div class="tf-quote tf-bill"><p>The bill</p><q>Business - seats 40 <mark>USD 26.16</mark> USD 1,046.40</q></div>
-    </div>
-    <div class="tf-total"><strong>$3,180.24</strong><span>recoverable across 2 sample vendors<br/>19 findings, each quoted from both documents</span></div>
-  </figure>
-  <p class="tf-foot">Every number links back to the line it came from.</p>
-</aside>`;
 
 const EYE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
 const EYE_OFF =
@@ -429,9 +265,9 @@ const SCRIPT = `(function () {
 const ENHANCEMENTS = `<style>${STYLES}</style>`;
 const TAIL_SCRIPT = `<script>${SCRIPT}</script>`;
 
-/** The sign-in page: framework card + Tallyfoil styling, story panel and password helpers. */
+/** The sign-in page: the framework card with Tallyfoil styling and password helpers. */
 export function renderTallyfoilAuthPage(props: AuthPageProps): string {
-  return renderAuthPage(props) + ENHANCEMENTS + STORY + TAIL_SCRIPT + FONTS;
+  return renderAuthPage(props) + ENHANCEMENTS + TAIL_SCRIPT + FONTS;
 }
 
 /** The reset-password page gets the same card styling and password eye. */
