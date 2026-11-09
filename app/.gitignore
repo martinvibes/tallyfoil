@@ -41,4 +41,3 @@ learnings.md
 .vercel/
 .agent-native/
 data/*.lock
-.vercel
