@@ -6,12 +6,14 @@
 import { fail } from "@agent-native/core/action";
 import { and, eq, inArray } from "drizzle-orm";
 
+import { matchEvidence } from "../audit/evidence.js";
 import { formatUsd } from "../audit/money.js";
 import { getDb, schema } from "../db/index.js";
 import { type DisputeLine, type Prose, composeDispute, guardProse, sortedLines } from "./dispute-compose.js";
 import { CHECK_LABELS } from "./format.js";
 import { isDeadline, isStanding } from "./ledger.js";
-import { requireVendor } from "./records.js";
+import { requireDocument, requireVendor } from "./records.js";
+import { type ReplyOutcome, readCredit } from "./reply.js";
 import { newId, nowTimestamp } from "./session.js";
 
 type FindingRow = typeof schema.findings.$inferSelect;
@@ -110,7 +112,7 @@ export const updateDispute = async (owner: string, disputeId: string, changes: {
   if (dispute.revision !== expectedRevision) {
     fail("This draft changed since you opened it. Reload and try again.", { errorCode: "save_conflict", statusCode: 409, details: { currentRevision: dispute.revision } });
   }
-  if (dispute.status === "approved") fail("This dispute is already approved.", { errorCode: "already_approved", statusCode: 409 });
+  if (dispute.status !== "draft") fail("This dispute is already approved.", { errorCode: "already_approved", statusCode: 409 });
 
   const prose: Prose = {
     subject: changes.subject ?? dispute.subject,
@@ -145,8 +147,45 @@ export const disputeView = async (owner: string, disputeId: string) => {
     total: formatUsd(composed.totalCents),
     body: composed.body,
     mailto: `mailto:?subject=${encodeURIComponent(dispute.subject)}&body=${encodeURIComponent(composed.body)}`,
+    recoveredCents: dispute.recoveredCents,
+    recovered: dispute.recoveredCents === null ? null : formatUsd(dispute.recoveredCents),
+    reply: dispute.reply,
     updatedAt: dispute.updatedAt,
   };
+};
+
+/**
+ * The vendor answered. The agent picks the reply line; the matcher proves it
+ * is in the reply, and code reads the credited amount out of it.
+ */
+export const recordVendorReply = async (
+  owner: string,
+  input: { disputeId: string; documentId: string; outcome: ReplyOutcome; quotes: string[] },
+) => {
+  const dispute = await requireDispute(owner, input.disputeId);
+  if (dispute.status === "draft") {
+    fail("Approve and send the dispute before recording a reply.", { errorCode: "not_sent", statusCode: 409 });
+  }
+  const document = await requireDocument(owner, input.documentId);
+  if (document.vendorId !== dispute.vendorId) fail("The reply belongs to another vendor.", { errorCode: "wrong_vendor", statusCode: 400 });
+
+  const match = matchEvidence(document.text, input.quotes.map((quote) => ({ quote })), { kind: "presence" });
+  if (!match.ok) fail(`Reply: ${match.message}`, { errorCode: match.errorCode, statusCode: 422 });
+
+  const { totalCents } = composeDispute(await linesFor(owner, dispute), dispute);
+  const reading = readCredit(input.outcome, match.fragments.map((fragment) => fragment.quote), totalCents);
+  if (!reading.ok) fail(reading.message, { errorCode: reading.errorCode, statusCode: 422 });
+
+  await getDb()
+    .update(schema.disputes)
+    .set({
+      status: reading.status,
+      recoveredCents: reading.recoveredCents,
+      reply: { documentId: document.id, fragments: match.fragments, outcome: input.outcome },
+      updatedAt: nowTimestamp(),
+    })
+    .where(and(eq(schema.disputes.ownerEmail, owner), eq(schema.disputes.id, input.disputeId)));
+  return disputeView(owner, input.disputeId);
 };
 
 export const approveDispute = async (owner: string, disputeId: string) => {

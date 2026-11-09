@@ -58,7 +58,7 @@ const nextDeadline = (rows: readonly FindingRow[]) =>
 
 export const getOverview = async (owner: string) => {
   const db = getDb();
-  const [vendors, documents, invoices, terms, findings, runs] = await Promise.all([
+  const [vendors, documents, invoices, terms, findings, runs, replies] = await Promise.all([
     db.select().from(schema.vendors).where(eq(schema.vendors.ownerEmail, owner)).orderBy(schema.vendors.createdAt),
     db
       .select({ vendorId: schema.documents.vendorId, status: schema.documents.status })
@@ -76,7 +76,12 @@ export const getOverview = async (owner: string) => {
     db.select({ vendorId: schema.terms.vendorId }).from(schema.terms).where(eq(schema.terms.ownerEmail, owner)),
     db.select().from(schema.findings).where(eq(schema.findings.ownerEmail, owner)),
     latestRuns(owner),
+    db
+      .select({ vendorId: schema.disputes.vendorId, recoveredCents: schema.disputes.recoveredCents })
+      .from(schema.disputes)
+      .where(eq(schema.disputes.ownerEmail, owner)),
   ]);
+  const recoveredCents = replies.reduce((sum, row) => sum + (row.recoveredCents ?? 0), 0);
 
   const count = <T extends { vendorId: string }>(rows: readonly T[], vendorId: string, keep: (row: T) => boolean = () => true) =>
     rows.filter((row) => row.vendorId === vendorId && keep(row)).length;
@@ -102,6 +107,8 @@ export const getOverview = async (owner: string) => {
   const latest = runs[0];
   return {
     totals: withMoney(ledgerTotals(findings)),
+    /** What vendors have actually credited, read from their quoted replies. */
+    recovered: { cents: recoveredCents, amount: formatUsd(recoveredCents), disputes: replies.filter((row) => (row.recoveredCents ?? 0) > 0).length },
     nextDeadline: deadline && { ...deadline, vendorName: vendors.find((v) => v.id === deadline.vendorId)?.name ?? "" },
     vendors: vendorViews,
     timeline: tallyTimeline(invoices, findings),

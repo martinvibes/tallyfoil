@@ -28,6 +28,7 @@ document range.
 - Auditing a vendor (new documents, "audit X", "check my bills") → skill `audit-vendor`
 - User rejected a finding with a reason, or says "that's fine because…" → `learn-from-rejection`
 - "Draft the dispute", "write to the vendor", "get our money back" → `write-dispute`
+- "They replied", "check the vendor's reply", a pasted vendor answer → `write-dispute` (When the vendor replies)
 
 ## Renewal watch (automation)
 Each user gets a daily automation at `jobs/renewal-watch.md` (installed the first time they
@@ -53,7 +54,8 @@ or to stop it, use `manage-automations`; don't create a second copy.
 ## Action index (most used)
 `view-screen`, `get-overview`, `get-vendor`, `get-finding`, `read-document`,
 `record-terms`, `record-invoices`, `ingest-usage-export`, `run-audit`, `review-finding`,
-`add-vendor-rule`, `remove-vendor-rule`, `draft-dispute`, `approve-dispute`, `navigate`,
+`add-vendor-rule`, `remove-vendor-rule`, `draft-dispute`, `approve-dispute`,
+`record-vendor-reply`, `navigate`,
 `add-document`, `create-vendor`.
 
 ## Term keys (record-terms)

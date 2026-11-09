@@ -175,4 +175,12 @@ export const MIGRATIONS: MigrationEntry[] = [
       CREATE INDEX IF NOT EXISTS disputes_vendor_idx ON disputes (owner_email, vendor_id);
     `,
   },
+  {
+    version: 2,
+    name: "tallyfoil-dispute-replies",
+    sql: `
+      ALTER TABLE disputes ADD COLUMN IF NOT EXISTS recovered_cents BIGINT;
+      ALTER TABLE disputes ADD COLUMN IF NOT EXISTS reply_json JSONB;
+    `,
+  },
 ];

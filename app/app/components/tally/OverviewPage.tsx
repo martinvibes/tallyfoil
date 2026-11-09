@@ -65,6 +65,11 @@ function Hero({ overview }: { overview: Overview }) {
             {totals.acceptedCount > 0 && ` · ${totals.acceptedCount} accepted`}
             {totals.explainedCount > 0 && ` · ${totals.explainedCount} explained by your rules`}
           </p>
+          {overview.recovered.cents > 0 && (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#45d4bf]/40 bg-[#45d4bf]/10 px-3 py-1 text-sm text-[#7fe6d6]">
+              <span className="font-figure">{overview.recovered.amount}</span> already credited back by your vendors
+            </p>
+          )}
         </div>
         {nextDeadline ? (
           <Link

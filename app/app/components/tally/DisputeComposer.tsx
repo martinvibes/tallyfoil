@@ -1,5 +1,6 @@
+import { sendToAgentChat } from "@agent-native/core/client/agent-chat";
 import { actionErrorMessage, callAction, useActionQuery } from "@agent-native/core/client/hooks";
-import { IconArrowLeft, IconCheck, IconCopy, IconLock, IconMail, IconShieldCheck, IconShieldX } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck, IconCopy, IconFileText, IconLock, IconMail, IconMailForward, IconShieldCheck, IconShieldX } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
@@ -45,7 +46,8 @@ function Composer({ dispute }: { dispute: DisputeView }) {
   const queryClient = useQueryClient();
   const [prose, setProse] = useState<Prose>({ subject: dispute.subject, intro: dispute.intro, closing: dispute.closing });
   const [saving, setSaving] = useState<"save" | "approve" | null>(null);
-  const approved = dispute.status === "approved";
+  /** Approved means it left the composer: the prose is final from here on. */
+  const approved = dispute.status !== "draft";
   const dirty = prose.subject !== dispute.subject || prose.intro !== dispute.intro || prose.closing !== dispute.closing;
 
   const checks = useMemo(
@@ -104,7 +106,7 @@ function Composer({ dispute }: { dispute: DisputeView }) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-figure text-[11px] uppercase tracking-[0.2em] text-white/45">Dispute to {dispute.vendor.name}</p>
-              <span className="rounded-sm border border-white/20 px-1.5 py-px font-figure text-[10px] uppercase tracking-wide text-white/70">{dispute.status}</span>
+              <span className="rounded-sm border border-white/20 px-1.5 py-px font-figure text-[10px] uppercase tracking-wide text-white/70">{STATUS_LABEL[dispute.status]}</span>
               {dispute.vendor.isSample && <SampleBadge />}
             </div>
             <CountUpMoney cents={dispute.totalCents} className="silver-text ledger-numeral mt-1 block text-6xl leading-none" />
@@ -174,12 +176,112 @@ function Composer({ dispute }: { dispute: DisputeView }) {
           </>
         )}
       </div>
+      {approved && (dispute.reply ? <ReplyOutcome dispute={dispute} /> : <ReplyBox dispute={dispute} />)}
       <p className="text-xs text-muted-foreground">
         <Link to={OVERVIEW_PATH} className="underline-offset-4 hover:underline">
           Back to the overview
         </Link>
       </p>
     </div>
+  );
+}
+
+const STATUS_LABEL: Record<DisputeView["status"], string> = {
+  draft: "draft",
+  approved: "sent",
+  credited: "credited",
+  partially_credited: "part credited",
+  refused: "refused",
+};
+
+/** The loop closes here: paste what the vendor wrote back and the agent reads it. */
+function ReplyBox({ dispute }: { dispute: DisputeView }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const check = async () => {
+    setBusy(true);
+    try {
+      const reply = await callAction<{ id: string }>("add-document", {
+        vendorId: dispute.vendor.id,
+        kind: "note",
+        name: `reply-${new Date().toISOString().slice(0, 10)}.txt`,
+        text: text.trim(),
+      });
+      sendToAgentChat({
+        message: `${dispute.vendor.name} replied to the dispute. Check what they credited.`,
+        context: `Dispute ${dispute.id}; their reply is document ${reply.id}. read-document it, then record-vendor-reply with the outcome and the exact line that states the credit. Amounts come from the action result only.`,
+        submit: true,
+      });
+      setText("");
+      toast.success("Reply added. The agent is reading it.");
+    } catch (error) {
+      toast.error(actionErrorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="space-y-2 rounded-md border border-dashed border-rule bg-card p-4" aria-label="Vendor reply">
+      <label htmlFor="vendor-reply" className="flex items-center gap-1.5 text-sm font-medium">
+        <IconMailForward className="size-4 text-muted-foreground" /> Did {dispute.vendor.name} reply?
+      </label>
+      <textarea
+        id="vendor-reply"
+        rows={4}
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        placeholder="Paste their email. The agent quotes the line that states the credit, and code reads the amount from it."
+        className="w-full rounded-md border border-input bg-background px-3 py-2 font-figure text-xs"
+      />
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => void check()} disabled={!text.trim() || busy}>
+          {busy ? "Adding…" : "Check their reply"}
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+function ReplyOutcome({ dispute }: { dispute: DisputeView }) {
+  const refused = dispute.status === "refused";
+  const recovered = dispute.recoveredCents ?? 0;
+  return (
+    <section className="night-panel relative overflow-hidden rounded-2xl px-6 py-6 md:px-8" aria-label="Their reply">
+      <p className="font-figure text-[11px] uppercase tracking-[0.2em] text-white/45">Their reply</p>
+      {refused ? (
+        <p className="ledger-numeral mt-2 text-3xl text-white/80">Refused. Nothing recovered yet.</p>
+      ) : (
+        <div className="mt-1 flex flex-wrap items-end gap-3">
+          <CountUpMoney cents={recovered} className="ledger-numeral block text-6xl leading-none text-[#45d4bf]" />
+          <span className="pb-1 text-sm text-white/55">recovered of {dispute.total}</span>
+        </div>
+      )}
+      <div className="mt-4 space-y-2">
+        {dispute.reply?.fragments.map((fragment) => (
+          <blockquote key={fragment.start} className="border-l-2 border-[#45d4bf]/70 pl-3 font-figure text-sm text-white/80">
+            &ldquo;{fragment.quote}&rdquo;
+          </blockquote>
+        ))}
+      </div>
+      {dispute.reply && (
+        <Link
+          to={pathForLocation({ view: "document", documentId: dispute.reply.documentId })}
+          className="mt-4 inline-flex items-center gap-1 text-xs text-white/55 hover:text-white"
+        >
+          <IconFileText className="size-3.5" /> Open their reply
+        </Link>
+      )}
+      {!refused && (
+        <span
+          aria-hidden="true"
+          className="absolute right-6 top-6 rotate-[-8deg] rounded-sm border-[3px] border-double border-[#45d4bf] px-3 py-1 font-figure text-sm font-bold uppercase tracking-[0.25em] text-[#45d4bf]"
+        >
+          {dispute.status === "credited" ? "Recovered" : "Part recovered"}
+        </span>
+      )}
+    </section>
   );
 }
 

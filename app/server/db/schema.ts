@@ -17,7 +17,12 @@ export interface EvidenceJson {
 export type DocumentKind = "contract" | "amendment" | "invoice" | "usage_export" | "note";
 export type DocumentStatus = "new" | "read" | "recorded";
 export type FindingStatus = "open" | "accepted" | "rejected" | "explained" | "cleared";
-export type DisputeStatus = "draft" | "approved";
+export type DisputeStatus = "draft" | "approved" | "credited" | "partially_credited" | "refused";
+
+/** The vendor's answer: the reply document and the exact line(s) that state it. */
+export interface DisputeReplyJson extends EvidenceJson {
+  outcome: "credited" | "refused";
+}
 
 const id = () => text("id").primaryKey();
 const owner = () => text("owner_email").notNull();
@@ -225,6 +230,9 @@ export const disputes = pgTable(
     amountCents: count("amount_cents").notNull(),
     status: text("status").$type<DisputeStatus>().notNull().default("draft"),
     revision: integer("revision").notNull().default(1),
+    /** Read by code from the vendor's quoted reply; null until they answer. */
+    recoveredCents: count("recovered_cents"),
+    reply: jsonb("reply_json").$type<DisputeReplyJson | null>(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
