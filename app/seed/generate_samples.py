@@ -6,7 +6,7 @@ All vendors and customers are FICTIONAL. Every document carries a
 "SAMPLE DOCUMENT" footer so nothing can be mistaken for a real bill.
 
 Run:  python3 seed/generate_samples.py   (needs: pip install reportlab)
-Output goes to seed/sample-docs/ and seed/expected-findings.json
+Output goes to app/seed/sample-docs/ and app/seed/expected-findings.json
 """
 from __future__ import annotations
 

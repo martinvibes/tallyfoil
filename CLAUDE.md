@@ -10,15 +10,13 @@ Read these before writing code, in this order:
 2. `docs/ENGINE.md` — audit rules and the evidence check (deterministic code)
 3. `docs/FRAMEWORK_NOTES.md` — verified Agent-Native APIs (do not guess APIs)
 4. `docs/UI.md` — screens and visual design
-5. `docs/BUILD_PLAN.md` — phases, checkpoints, cut lines
-6. `seed/expected-findings.json` — the numbers the engine must reproduce
+5. `app/seed/expected-findings.json` — the numbers the engine must reproduce
 
 ## Repo layout
-This build pack sits at the repo root. The app is scaffolded into **`app/`**. Every code
-path in the docs (`actions/`, `server/audit/`, `server/db/`, `seed/`) is relative to `app/`.
-Copy `seed/` to `app/seed/`. The template ships its own `AGENTS.md` (instructions for the
-in-app agent): **merge** `app-agent/AGENTS.md` into it — keep the template's framework
-sections, replace the app description with ours. Skills go to `app/.agents/skills/`.
+The app lives in **`app/`**. Every code path in the docs (`actions/`, `server/audit/`,
+`server/db/`, `seed/`) is relative to `app/`. The in-app agent's instructions are
+`app/AGENTS.md` (the template's framework sections plus ours), and its skills are in
+`app/.agents/skills/` (`audit-vendor`, `learn-from-rejection`, `write-dispute`).
 
 ## The one-sentence thesis
 **The AI reads; code decides the money.** The agent extracts terms and bill lines
@@ -77,7 +75,6 @@ Check `node_modules/@agent-native/core` types or https://www.agent-native.com/do
 before inventing anything. Note what you verified in `docs/FRAMEWORK_NOTES.md`.
 
 ## Working style
-- Build in the order of `docs/BUILD_PLAN.md`. Commit at each checkpoint.
-- If something blocks you for more than ~30 minutes, take the cut line in BUILD_PLAN
-  and move on; tell me what you cut.
+- Commit and push each small, working step.
+- If something blocks you for more than ~30 minutes, cut it and move on; tell me what you cut.
 - Prefer boring, reliable code. The demo must never crash on camera.
