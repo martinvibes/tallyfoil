@@ -137,3 +137,10 @@ Set a spend limit on the LLM key — judges will run the agent.
   framework default `gpt-6-luna`). DeepSeek rejects `developer`, so set the model to
   `deepseek-chat`, which gets role `system`. Don't quote values in `.env` that are passed
   through as model ids.
+- **Pin the engine for every account with env**: `AGENT_ENGINE=ai-sdk:openai` and
+  `AGENT_MODEL=deepseek-chat` (app-config `agent.engine`/`agent.model`). Env wins over the
+  stored org default, so new sign-ups on the deployed app don't fall back to `gpt-6-luna`.
+- **Agent writes vs. on-screen queries**: after an agent run, an already-mounted
+  `useActionQuery` (our sidebar) could keep stale data. `app/hooks/use-refresh-on-agent-writes.ts`
+  invalidates `["action"]` on `agent-native:tool-done` and on `agentNative.chatRunning`
+  with `isRunning:false`.

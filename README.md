@@ -102,8 +102,10 @@ pnpm dev                 # http://localhost:8080 — "Continue as local dev"
 pnpm test                # audit engine, evidence matcher, number guard (118 tests)
 ```
 
-Connect a model in the chat panel (**Use Builder.io** or **Custom keys**), or put
-`ANTHROPIC_API_KEY` in `app/.env`. Then click **Load sample audit** and the agent reads
+Connect a model in the chat panel (**Use Builder.io** or **Custom keys**), or set one in
+`app/.env`: `ANTHROPIC_API_KEY`, or any OpenAI-compatible endpoint (we run on DeepSeek with
+`OPENAI_API_KEY`, `OPENAI_BASE_URL`, `AGENT_ENGINE=ai-sdk:openai`, `AGENT_MODEL=deepseek-chat`;
+see `app/.env.example`). Then click **Load sample audit** and the agent reads
 and audits both sample vendors.
 
 To see the finished audit without a model, replay the sample reading deterministically:
