@@ -105,7 +105,7 @@ export const requireDispute = async (owner: string, disputeId: string) => {
   return dispute;
 };
 
-export const updateDispute = async (owner: string, disputeId: string, changes: Partial<Prose>, expectedRevision: number) => {
+export const updateDispute = async (owner: string, disputeId: string, changes: { [K in keyof Prose]?: Prose[K] | undefined }, expectedRevision: number) => {
   const dispute = await requireDispute(owner, disputeId);
   if (dispute.revision !== expectedRevision) {
     fail("This draft changed since you opened it. Reload and try again.", { errorCode: "save_conflict", statusCode: 409, details: { currentRevision: dispute.revision } });
