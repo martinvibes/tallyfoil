@@ -1,6 +1,5 @@
-import { sendToAgentChat } from "@agent-native/core/client/agent-chat";
 import { actionErrorMessage, callAction, useActionQuery } from "@agent-native/core/client/hooks";
-import { IconArrowRight, IconFileUpload, IconFlask } from "@tabler/icons-react";
+import { IconArrowRight, IconFileUpload } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -11,8 +10,9 @@ import { type Overview, relativeTime } from "@/lib/tally";
 import { cn } from "@/lib/utils";
 import { pathForLocation } from "@shared/routes";
 
+import { EmptyOverview } from "./EmptyOverview";
 import { MirrorChart } from "./MirrorChart";
-import { CountUpMoney, Money, NotchMark, SampleBadge } from "./primitives";
+import { CountUpMoney, Money, SampleBadge } from "./primitives";
 import { UploadPanel } from "./UploadPanel";
 
 type VendorCard = Overview["vendors"][number];
@@ -27,7 +27,7 @@ export function OverviewPage() {
     <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-8 md:px-8">
       {data.vendors.length > 0 && <Hero overview={data} />}
       {data.vendors.length === 0 ? (
-        <EmptyState onUpload={() => setUploading(true)} />
+        <EmptyOverview onUpload={() => setUploading(true)} />
       ) : (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
@@ -177,47 +177,6 @@ function VendorCardView({ vendor }: { vendor: VendorCard }) {
         </p>
       )}
     </Link>
-  );
-}
-
-function EmptyState({ onUpload }: { onUpload: () => void }) {
-  const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(false);
-
-  const loadSample = async () => {
-    setLoading(true);
-    try {
-      await callAction("load-sample-data", {});
-      await queryClient.invalidateQueries();
-      sendToAgentChat({
-        message: "Audit both sample vendors",
-        context: "The user just loaded the labeled sample set (Cobalt Workspace and Halcyon AI). Use the audit-vendor skill for each.",
-        submit: true,
-      });
-    } catch (error) {
-      toast.error(actionErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <section className="ledger-ruled rounded-md border border-rule bg-card px-6 py-12 text-center">
-      <NotchMark className="mx-auto size-10" />
-      <h2 className="ledger-numeral mx-auto mt-4 max-w-xl text-3xl font-medium">Your vendors bill you. Tallyfoil checks the bill.</h2>
-      <p className="mx-auto mt-3 max-w-lg text-sm text-muted-foreground">
-        The agent reads your contracts and invoices and quotes every figure it records. Code does the arithmetic. Every overcharge comes with
-        both halves of the proof.
-      </p>
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Button onClick={loadSample} disabled={loading} className="bg-notch text-white hover:bg-notch/90">
-          <IconFlask className="size-4" /> {loading ? "Loading…" : "Load sample audit"}
-        </Button>
-        <Button variant="outline" onClick={onUpload}>
-          <IconFileUpload className="size-4" /> Upload your bills
-        </Button>
-      </div>
-    </section>
   );
 }
 
