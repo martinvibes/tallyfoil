@@ -117,15 +117,15 @@ function WorkspaceHeader({
             {unread > 0 && <span className="ml-2 rounded-full bg-[#e0a43a]/15 px-2 py-0.5 text-[#f0b54a]">{unread} waiting to be read</span>}
           </p>
         </div>
-        <div className="flex items-end gap-8">
+        <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
           <div>
             <p className="font-figure text-[10px] uppercase tracking-[0.2em] text-white/45">Recoverable</p>
-            <CountUpMoney cents={totals.recoverableCents} className="ledger-numeral block text-4xl leading-tight text-[#ff6a4d]" />
+            <CountUpMoney cents={totals.recoverableCents} className="ledger-numeral block text-3xl leading-tight text-[#ff6a4d] sm:text-4xl" />
           </div>
           {totals.atRiskCents > 0 && (
             <div>
               <p className="font-figure text-[10px] uppercase tracking-[0.2em] text-white/45">At risk</p>
-              <CountUpMoney cents={totals.atRiskCents} className="ledger-numeral block text-3xl leading-tight text-[#f0b54a]" />
+              <CountUpMoney cents={totals.atRiskCents} className="ledger-numeral block text-2xl leading-tight text-[#f0b54a] sm:text-3xl" />
               {detail.nextDeadline && <p className="text-[11px] text-white/45">notice by {detail.nextDeadline.deadlineLabel}</p>}
             </div>
           )}

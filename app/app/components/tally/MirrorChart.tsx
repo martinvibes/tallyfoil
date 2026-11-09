@@ -107,6 +107,8 @@ export function MirrorChart({
 
   const flaggedCount = months.filter((m) => m.overchargeCents > 0).length;
   const current = months[shown];
+  /** Slide the pill by its own width as it travels, so it never leaves the panel on a phone. */
+  const pillAt = ((shown + 0.5) / n) * 100;
 
   if (months.length === 0) return null;
 
@@ -194,8 +196,8 @@ export function MirrorChart({
       {/* The scrubber pill rides the axis, like a price on a depth chart */}
       {current && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-150 ease-out"
-          style={{ left: `${Math.min(92, Math.max(8, ((shown + 0.5) / n) * 100))}%`, top: mid }}
+          className="pointer-events-none absolute z-10 transition-[left,transform] duration-150 ease-out"
+          style={{ left: `${pillAt}%`, top: mid, transform: `translate(-${pillAt}%, -50%)` }}
           aria-live="polite"
         >
           <div className={cn("whitespace-nowrap rounded-md border bg-[#0b0b0d]/95 px-3 py-1.5 text-center font-figure shadow-xl backdrop-blur", current.overchargeCents > 0 ? "border-[#ff4d2e]/60" : "border-[#45d4bf]/50")}>
