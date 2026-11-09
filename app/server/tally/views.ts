@@ -64,7 +64,15 @@ export const getOverview = async (owner: string) => {
       .select({ vendorId: schema.documents.vendorId, status: schema.documents.status })
       .from(schema.documents)
       .where(eq(schema.documents.ownerEmail, owner)),
-    db.select({ vendorId: schema.invoices.vendorId }).from(schema.invoices).where(eq(schema.invoices.ownerEmail, owner)),
+    db
+      .select({
+        vendorId: schema.invoices.vendorId,
+        periodStart: schema.invoices.periodStart,
+        totalCents: schema.invoices.totalCents,
+        invoiceNumber: schema.invoices.invoiceNumber,
+      })
+      .from(schema.invoices)
+      .where(eq(schema.invoices.ownerEmail, owner)),
     db.select({ vendorId: schema.terms.vendorId }).from(schema.terms).where(eq(schema.terms.ownerEmail, owner)),
     db.select().from(schema.findings).where(eq(schema.findings.ownerEmail, owner)),
     latestRuns(owner),
@@ -96,6 +104,7 @@ export const getOverview = async (owner: string) => {
     totals: withMoney(ledgerTotals(findings)),
     nextDeadline: deadline && { ...deadline, vendorName: vendors.find((v) => v.id === deadline.vendorId)?.name ?? "" },
     vendors: vendorViews,
+    timeline: tallyTimeline(invoices, findings),
     latestRun: latest
       ? { id: latest.id, asOf: latest.asOf, createdAt: latest.createdAt, scope: latest.scope, engineVersion: latest.engineVersion }
       : null,
@@ -200,6 +209,8 @@ const tallyTimeline = (invoices: ReadonlyArray<{ periodStart: string; totalCents
       overcharge: formatUsd(overchargeCents),
       invoiceNumbers: billed.map((invoice) => invoice.invoiceNumber),
       findingIds: flagged.map((row) => row.id),
+      /** The largest overcharge that month, for click-through. */
+      topFinding: [...flagged].sort((a, b) => b.amountCents - a.amountCents).map((row) => ({ id: row.id, vendorId: row.vendorId, title: row.title }))[0] ?? null,
     });
   }
   return notches;

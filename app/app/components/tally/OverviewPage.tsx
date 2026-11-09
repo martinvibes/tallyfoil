@@ -2,8 +2,8 @@ import { sendToAgentChat } from "@agent-native/core/client/agent-chat";
 import { actionErrorMessage, callAction, useActionQuery } from "@agent-native/core/client/hooks";
 import { IconArrowRight, IconFileUpload, IconFlask } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { type Overview, relativeTime } from "@/lib/tally";
 import { cn } from "@/lib/utils";
 import { pathForLocation } from "@shared/routes";
 
+import { MirrorChart } from "./MirrorChart";
 import { CountUpMoney, Money, NotchMark, SampleBadge } from "./primitives";
 import { UploadPanel } from "./UploadPanel";
 
@@ -49,36 +50,92 @@ export function OverviewPage() {
 }
 
 function Hero({ overview }: { overview: Overview }) {
+  const navigate = useNavigate();
   const { totals, nextDeadline } = overview;
   const overcharges = totals.findingCount - totals.deadlineCount;
+
   return (
-    <section className="grid gap-6 border-b border-rule pb-8 md:grid-cols-[1.4fr_1fr]">
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Recoverable</p>
-        <CountUpMoney cents={totals.recoverableCents} className="block text-6xl font-medium leading-none text-notch md:text-7xl" />
-        <p className="mt-3 text-sm text-muted-foreground">
-          {overcharges} overcharge{overcharges === 1 ? "" : "s"} standing
-          {totals.acceptedCount > 0 && ` · ${totals.acceptedCount} accepted`}
-          {totals.rejectedCount > 0 && ` · ${totals.rejectedCount} rejected`}
-          {totals.explainedCount > 0 && ` · ${totals.explainedCount} explained by your rules`}
-        </p>
-      </div>
-      <div className="md:border-l md:border-rule md:pl-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">At risk</p>
-        <CountUpMoney cents={totals.atRiskCents} className="block text-4xl font-medium leading-none text-amber md:text-5xl" />
+    <section className="night-panel overflow-hidden rounded-2xl shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)]" aria-label="What your vendors owe you">
+      <div className="grid gap-8 px-6 pt-8 md:grid-cols-[1.3fr_1fr] md:px-10 md:pt-10">
+        <div>
+          <p className="font-figure text-[11px] uppercase tracking-[0.2em] text-white/45">Recoverable · proven line by line</p>
+          <CountUpMoney cents={totals.recoverableCents} className="silver-text ledger-numeral mt-2 block text-6xl font-medium leading-[0.95] md:text-8xl" />
+          <p className="mt-4 text-sm text-white/55">
+            {overcharges} overcharge{overcharges === 1 ? "" : "s"} across {overview.vendors.length} vendor{overview.vendors.length === 1 ? "" : "s"}
+            {totals.acceptedCount > 0 && ` · ${totals.acceptedCount} accepted`}
+            {totals.explainedCount > 0 && ` · ${totals.explainedCount} explained by your rules`}
+          </p>
+        </div>
         {nextDeadline ? (
           <Link
             to={pathForLocation({ view: "finding", vendorId: nextDeadline.vendorId, findingId: nextDeadline.findingId })}
-            className="mt-3 inline-flex items-center gap-1 text-sm text-foreground underline decoration-amber/60 underline-offset-4 hover:decoration-amber"
+            className="group self-end rounded-xl border border-[#e0a43a]/30 bg-[#e0a43a]/[0.06] p-5 transition-colors hover:border-[#e0a43a]/60"
           >
-            Notice due {nextDeadline.deadlineLabel} · {nextDeadline.vendorName}
-            <IconArrowRight className="size-3.5" />
+            <p className="font-figure text-[11px] uppercase tracking-[0.2em] text-[#e0a43a]/80">At risk · auto-renewal</p>
+            <CountUpMoney cents={totals.atRiskCents} className="ledger-numeral mt-1 block text-4xl text-[#f0b54a] md:text-5xl" />
+            <Countdown deadline={nextDeadline.deadline} />
+            <p className="mt-2 flex items-center gap-1 text-xs text-white/50 group-hover:text-white/80">
+              Tell {nextDeadline.vendorName} by {nextDeadline.deadlineLabel} <IconArrowRight className="size-3" />
+            </p>
           </Link>
         ) : (
-          <p className="mt-3 text-sm text-muted-foreground">No renewal deadlines in the next 45 days.</p>
+          <p className="self-end text-sm text-white/45">No renewal deadlines in the next 45 days.</p>
         )}
       </div>
+
+      <MirrorChart
+        months={overview.timeline}
+        height={300}
+        className="mt-6"
+        onSelect={(month) =>
+          month.topFinding && navigate(pathForLocation({ view: "finding", vendorId: month.topFinding.vendorId, findingId: month.topFinding.id }))
+        }
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-6 py-3 font-figure text-[11px] uppercase tracking-[0.14em] text-white/45 md:px-10">
+        <span className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5">
+            <span className="h-px w-5 bg-[#f6efe4]" /> Their half · billed
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-px w-5 bg-[#45d4bf]" /> Your half · agreed
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-3 bg-[#ff4d2e]/80" /> The gap
+          </span>
+        </span>
+        <span>Hover a month · click a red one for the proof</span>
+      </div>
     </section>
+  );
+}
+
+/** Days, hours, minutes, seconds until the notice window closes (end of that day). */
+function Countdown({ deadline }: { deadline: string }) {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const end = new Date(`${deadline}T23:59:59`).getTime();
+  const left = now === null ? null : Math.max(0, end - now);
+  const parts =
+    left === null
+      ? ["--", "--", "--", "--"]
+      : [Math.floor(left / 86_400_000), Math.floor(left / 3_600_000) % 24, Math.floor(left / 60_000) % 60, Math.floor(left / 1000) % 60].map((v) =>
+          String(v).padStart(2, "0"),
+        );
+
+  return (
+    <div className="mt-3 flex gap-1.5 font-figure" aria-label={left === null ? "Time left to give notice" : `${parts[0]} days left to give notice`}>
+      {parts.map((value, i) => (
+        <span key={i} className="flex min-w-12 flex-col items-center rounded-md bg-black/40 px-2 py-1.5">
+          <span className="text-lg tabular-nums text-white">{value}</span>
+          <span className="text-[9px] uppercase tracking-wider text-white/40">{["days", "hrs", "min", "sec"][i]}</span>
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -161,21 +218,35 @@ function EmptyState({ onUpload }: { onUpload: () => void }) {
 
 function ResetLink() {
   const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
   const reset = async () => {
-    if (!window.confirm("Delete all vendors, documents and findings?")) return;
     try {
       await callAction("reset-demo", {});
       await queryClient.invalidateQueries();
       toast.success("Cleared. The ledger is empty.");
     } catch (error) {
       toast.error(actionErrorMessage(error));
+    } finally {
+      setConfirming(false);
     }
   };
   return (
-    <div className="border-t border-rule pt-4 text-right">
-      <button type="button" onClick={reset} className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-        Reset all data
-      </button>
+    <div className="flex items-center justify-end gap-3 border-t border-rule pt-4 text-xs text-muted-foreground">
+      {confirming ? (
+        <>
+          <span>Delete every vendor, document and finding?</span>
+          <button type="button" onClick={() => void reset()} className="font-medium text-notch hover:underline">
+            Delete all
+          </button>
+          <button type="button" onClick={() => setConfirming(false)} className="hover:text-foreground">
+            Keep
+          </button>
+        </>
+      ) : (
+        <button type="button" onClick={() => setConfirming(true)} className="underline-offset-4 hover:text-foreground hover:underline">
+          Reset all data
+        </button>
+      )}
     </div>
   );
 }

@@ -465,3 +465,44 @@
 @media (prefers-reduced-motion: reduce) {
   .guard-shake { animation: none; }
 }
+
+/* Mirror chart: contours rise out of the axis, the gaps breathe. */
+@keyframes mirror-rise {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.mirror-rise {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: mirror-rise 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes mirror-pulse {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+.mirror-pulse {
+  animation: mirror-pulse 2.4s ease-in-out infinite;
+}
+
+/* The night panel: Resend-style silver serif on near-black. */
+.night-panel {
+  background:
+    radial-gradient(120% 80% at 50% 110%, rgba(69, 212, 191, 0.10), transparent 60%),
+    radial-gradient(80% 60% at 50% -20%, rgba(255, 77, 46, 0.10), transparent 60%),
+    #0b0b0d;
+  color: #f6efe4;
+}
+
+.silver-text {
+  background: linear-gradient(180deg, #ffffff 20%, #a8a39b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirror-rise, .mirror-pulse { animation: none; }
+}
