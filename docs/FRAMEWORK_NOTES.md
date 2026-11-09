@@ -115,3 +115,25 @@ LLM key or Builder connection, `CRON_SECRET` (Vercel) / `A2A_SECRET` (Netlify) f
 scheduled automations. Run `pnpm migrate:production` before first visit. Follow the host
 guide at agent-native.com/docs/vercel or /netlify for the `NITRO_PRESET` build.
 Set a spend limit on the LLM key — judges will run the agent.
+
+## Verified while building (0.226.0, 8–9 Nov 2026)
+- **Local dev identity** is `dev@local.test` ("Continue as local dev"). Seed and query as that owner.
+- **Action endpoint**: `/_agent-native/actions/<name>`. GET actions take query params; POST takes JSON.
+  `pnpm action <name>` takes JSON-ish args. PGlite is single-writer: stop `pnpm dev`
+  before CLI writes such as `pnpm replay-sample`.
+- **`needsApproval`**: HTTP callers can't grant approval and get `409 approval_required`.
+  The app's own `callAction` (caller `"frontend"`) mints a UI capability and retries, so
+  UI buttons such as Approve work and raw `fetch` does not. This is intended.
+- **Automations** are markdown resources: `resourcePutIfAbsent(owner, "jobs/<name>.md",
+  content, "text/markdown")` from `@agent-native/core/resources`. Frontmatter holds
+  `schedule`, `enabled` and `runAs`.
+- **Engine/model**: `manage-agent-engine {action:"list"|"set"|"test", engine, model}` sets
+  the org default model (`set-agent-engine` is not mounted over HTTP). Chats that already
+  stored a model keep it, so open a new chat after changing it.
+  `manage-provider-models {action:"set", provider, models}` sets the picker list.
+- **OpenAI-compatible endpoints** (`OPENAI_API_KEY` + `OPENAI_BASE_URL`, e.g. DeepSeek):
+  the framework uses chat completions, and `@ai-sdk/openai` sends the system prompt as
+  role `developer` for model ids it treats as reasoning (`gpt-5+`, `o*`, including the
+  framework default `gpt-6-luna`). DeepSeek rejects `developer`, so set the model to
+  `deepseek-chat`, which gets role `system`. Don't quote values in `.env` that are passed
+  through as model ids.
