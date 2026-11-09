@@ -12,8 +12,8 @@ import { type VendorDetail, relativeTime } from "@/lib/tally";
 import { OVERVIEW_PATH, pathForLocation } from "@shared/routes";
 
 import { FindingsList } from "./FindingsList";
-import { CountUpMoney, LedgerHeading, SampleBadge } from "./primitives";
-import { TallyStick } from "./TallyStick";
+import { MirrorChart } from "./MirrorChart";
+import { CountUpMoney, SampleBadge } from "./primitives";
 import { UploadPanel } from "./UploadPanel";
 import { YourHalf } from "./YourHalf";
 
@@ -45,17 +45,10 @@ export function VendorWorkspace() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-6 px-4 py-6 md:px-6">
-      <WorkspaceHeader detail={data} onUpload={() => setUploading(true)} />
+      <WorkspaceHeader detail={data} onUpload={() => setUploading(true)} onSelectFinding={openFinding} />
       {uploading && <UploadPanel vendors={[data.vendor]} defaultVendorId={vendorId} onClose={() => setUploading(false)} />}
-      <TallyStick
-        notches={data.timeline}
-        onSelect={(notch) => {
-          const first = data.findings.find((finding) => finding.id === notch.findingIds[0]);
-          if (first) openFinding(first);
-        }}
-      />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] 2xl:grid-cols-[280px_minmax(0,1fr)_minmax(0,1.15fr)]">
-        <aside className="order-3 lg:col-span-2 2xl:order-1 2xl:col-span-1" aria-label="Your half">
+        <aside className="@container order-3 lg:col-span-2 2xl:order-1 2xl:col-span-1" aria-label="Your half">
           <YourHalf detail={data} />
         </aside>
         <section className="order-1 space-y-3 2xl:order-2" aria-label="Findings">
@@ -71,12 +64,21 @@ export function VendorWorkspace() {
   );
 }
 
-function WorkspaceHeader({ detail, onUpload }: { detail: VendorDetail; onUpload: () => void }) {
+function WorkspaceHeader({
+  detail,
+  onUpload,
+  onSelectFinding,
+}: {
+  detail: VendorDetail;
+  onUpload: () => void;
+  onSelectFinding: (finding: Pick<Finding, "id" | "title">) => void;
+}) {
   const queryClient = useQueryClient();
   const [running, setRunning] = useState(false);
   const { vendor, totals } = detail;
   const unread = detail.documents.filter((document) => document.status === "new").length;
   const latestDispute = detail.disputes[0];
+  const flagged = detail.timeline.filter((month) => month.overchargeCents > 0).length;
 
   const rerun = async () => {
     setRunning(true);
@@ -99,51 +101,60 @@ function WorkspaceHeader({ detail, onUpload }: { detail: VendorDetail; onUpload:
     });
 
   return (
-    <header className="space-y-4 border-b border-rule pb-5">
-      <Link to={OVERVIEW_PATH} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <IconArrowLeft className="size-3.5" /> All vendors
-      </Link>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <header className="night-panel overflow-hidden rounded-2xl shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)]">
+      <div className="flex flex-wrap items-end justify-between gap-6 px-6 pt-6 md:px-8">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="ledger-numeral text-3xl font-medium md:text-4xl">{vendor.name}</h1>
+          <Link to={OVERVIEW_PATH} className="inline-flex items-center gap-1 font-figure text-[11px] uppercase tracking-[0.18em] text-white/45 hover:text-white">
+            <IconArrowLeft className="size-3.5" /> All vendors
+          </Link>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h1 className="silver-text ledger-numeral text-4xl font-medium leading-none md:text-5xl">{vendor.name}</h1>
             {vendor.isSample && <SampleBadge />}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {vendor.kind === "seat_subscription" ? "Per-seat subscription" : "Usage-metered"} · {detail.invoices.length} bills · audited{" "}
-            {relativeTime(detail.lastAuditedAt)}
-            {unread > 0 && <span className="ml-2 rounded-full bg-amber/15 px-2 py-0.5 text-amber">{unread} waiting to be read</span>}
+          <p className="mt-2 text-xs text-white/50">
+            {vendor.kind === "seat_subscription" ? "Per-seat subscription" : "Usage-metered"} · {detail.invoices.length} bill{detail.invoices.length === 1 ? "" : "s"} · {flagged} of{" "}
+            {detail.timeline.length} months don&rsquo;t match · audited {relativeTime(detail.lastAuditedAt)}
+            {unread > 0 && <span className="ml-2 rounded-full bg-[#e0a43a]/15 px-2 py-0.5 text-[#f0b54a]">{unread} waiting to be read</span>}
           </p>
         </div>
-        <div className="flex items-end gap-6">
+        <div className="flex items-end gap-8">
           <div>
-            <LedgerHeading>Recoverable</LedgerHeading>
-            <CountUpMoney cents={totals.recoverableCents} className="block text-3xl leading-tight text-notch" />
+            <p className="font-figure text-[10px] uppercase tracking-[0.2em] text-white/45">Recoverable</p>
+            <CountUpMoney cents={totals.recoverableCents} className="ledger-numeral block text-4xl leading-tight text-[#ff6a4d]" />
           </div>
           {totals.atRiskCents > 0 && (
             <div>
-              <LedgerHeading>At risk</LedgerHeading>
-              <CountUpMoney cents={totals.atRiskCents} className="block text-2xl leading-tight text-amber" />
-              {detail.nextDeadline && <p className="text-xs text-muted-foreground">notice by {detail.nextDeadline.deadlineLabel}</p>}
+              <p className="font-figure text-[10px] uppercase tracking-[0.2em] text-white/45">At risk</p>
+              <CountUpMoney cents={totals.atRiskCents} className="ledger-numeral block text-3xl leading-tight text-[#f0b54a]" />
+              {detail.nextDeadline && <p className="text-[11px] text-white/45">notice by {detail.nextDeadline.deadlineLabel}</p>}
             </div>
           )}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={draftDispute} disabled={totals.recoverableCents === 0} className="bg-notch text-white hover:bg-notch/90">
+
+      <MirrorChart
+        months={detail.timeline}
+        height={200}
+        className="mt-2"
+        onSelect={(month) => month.topFinding && onSelectFinding(month.topFinding)}
+      />
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-6 py-3 md:px-8">
+        <Button onClick={draftDispute} disabled={totals.recoverableCents === 0} className="bg-[#ff4d2e] text-white hover:bg-[#ff4d2e]/90">
           <IconMail className="size-4" /> Draft dispute
         </Button>
         {latestDispute && (
-          <Button variant="outline" asChild>
+          <Button variant="ghost" asChild className="text-white/80 hover:bg-white/10 hover:text-white">
             <Link to={pathForLocation({ view: "dispute", disputeId: latestDispute.id })}>
               Open {latestDispute.status} dispute · {latestDispute.amount}
             </Link>
           </Button>
         )}
-        <Button variant="ghost" onClick={rerun} disabled={running}>
-          <IconRefresh className="size-4" /> {running ? "Auditing…" : "Re-run audit"}
+        <span className="flex-1" />
+        <Button variant="ghost" onClick={rerun} disabled={running} className="text-white/70 hover:bg-white/10 hover:text-white">
+          <IconRefresh className={running ? "size-4 animate-spin" : "size-4"} /> {running ? "Auditing…" : "Re-run audit"}
         </Button>
-        <Button variant="ghost" onClick={onUpload}>
+        <Button variant="ghost" onClick={onUpload} className="text-white/70 hover:bg-white/10 hover:text-white">
           <IconFileUpload className="size-4" /> Add documents
         </Button>
       </div>

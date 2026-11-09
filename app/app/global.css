@@ -506,3 +506,22 @@
 @media (prefers-reduced-motion: reduce) {
   .mirror-rise, .mirror-pulse { animation: none; }
 }
+
+/* The review stamp: thumps down, holds, lifts. */
+@keyframes ink-stamp {
+  0% { transform: translate(-50%, -50%) scale(2.6) rotate(-14deg); opacity: 0; }
+  18% { transform: translate(-50%, -50%) scale(0.94) rotate(-7deg); opacity: 0.95; }
+  26% { transform: translate(-50%, -50%) scale(1.02) rotate(-7deg); opacity: 0.95; }
+  80% { transform: translate(-50%, -50%) scale(1) rotate(-7deg); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(-7deg); opacity: 0; }
+}
+
+.ink-stamp {
+  animation: ink-stamp 1.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  background: hsl(var(--card));
+  box-shadow: 0 6px 18px -8px hsl(var(--notch) / 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-stamp { animation: none; opacity: 0.9; transform: translate(-50%, -50%) rotate(-7deg); }
+}

@@ -13,6 +13,7 @@ import { LedgerHeading, Money, SeverityLabel, StatusChip } from "./primitives";
 
 type Group = VendorDetail["findingGroups"][number];
 type Finding = VendorDetail["findings"][number];
+type Review = (findings: Finding[], decision: "accept" | "reject", reason?: string, approval?: string) => Promise<void>;
 
 const SEVERITY_TITLES: Record<string, string> = { breach: "Breach", verify: "Verify", deadline: "Deadline" };
 const REVIEWABLE = new Set(["open", "accepted", "rejected"]);
@@ -61,7 +62,17 @@ export function FindingsList({
   selectedId: string | undefined;
   onSelect: (finding: Finding) => void;
 }) {
-  const review = useReview(detail.vendor);
+  const reviewOnServer = useReview(detail.vendor);
+  const [stamps, setStamps] = useState<Record<string, "accept" | "reject">>({});
+  /** Stamp first (instant feedback), then save. */
+  const review: Review = async (findings, decision, reason, approval) => {
+    setStamps((current) => ({ ...current, ...Object.fromEntries(findings.map((f) => [f.id, decision])) }));
+    window.setTimeout(
+      () => setStamps((current) => Object.fromEntries(Object.entries(current).filter(([id]) => !findings.some((f) => f.id === id)))),
+      1400,
+    );
+    await reviewOnServer(findings, decision, reason, approval);
+  };
   const byId = new Map(detail.findings.map((finding) => [finding.id, finding]));
   const severities = [...new Set(detail.findingGroups.map((group) => group.severity))];
 
@@ -89,6 +100,7 @@ export function FindingsList({
                   selectedId={selectedId}
                   onSelect={onSelect}
                   review={review}
+                  stamps={stamps}
                 />
               ))}
           </div>
@@ -104,12 +116,14 @@ function FindingGroup({
   selectedId,
   onSelect,
   review,
+  stamps,
 }: {
   group: Group;
   findings: Finding[];
   selectedId: string | undefined;
   onSelect: (finding: Finding) => void;
-  review: ReturnType<typeof useReview>;
+  review: Review;
+  stamps: Record<string, "accept" | "reject">;
 }) {
   const containsSelected = findings.some((finding) => finding.id === selectedId);
   const [open, setOpen] = useState(containsSelected || findings.length <= 2);
@@ -150,10 +164,11 @@ function FindingGroup({
             <li key={finding.id}>
               <div
                 className={cn(
-                  "group flex items-center gap-2 py-1.5 pl-9 pr-3 text-sm",
+                  "group relative flex items-center gap-2 py-1.5 pl-9 pr-3 text-sm",
                   finding.id === selectedId ? "bg-shade" : "hover:bg-shade/60",
                 )}
               >
+                {stamps[finding.id] && <Stamp kind={stamps[finding.id]!} />}
                 <button type="button" onClick={() => onSelect(finding)} title={finding.explanation} className="flex min-w-0 flex-1 items-center gap-2 text-left">
                   <span className="min-w-0 flex-1 truncate">
                     {finding.periodLabel}
@@ -237,5 +252,20 @@ function RejectBox({ count, onCancel, onSubmit }: { count: number; onCancel: () 
         </Button>
       </div>
     </form>
+  );
+}
+
+/** Ink on paper: the decision lands on the row before the server answers. */
+function Stamp({ kind }: { kind: "accept" | "reject" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "ink-stamp pointer-events-none absolute left-1/2 top-1/2 z-10 rounded-sm border-[3px] border-double px-2 font-figure text-sm font-bold uppercase tracking-[0.2em]",
+        kind === "accept" ? "border-notch text-notch" : "border-muted-foreground text-muted-foreground",
+      )}
+    >
+      {kind === "accept" ? "Dispute" : "Waived"}
+    </span>
   );
 }

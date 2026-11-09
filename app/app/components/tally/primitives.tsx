@@ -69,16 +69,18 @@ export function SampleBadge() {
 
 const STATUS_STYLE: Record<string, string> = {
   open: "border-notch/40 text-notch",
-  accepted: "border-verified/40 bg-verified/10 text-verified",
+  accepted: "border-notch bg-notch/10 text-notch -rotate-2 border-double border-[3px] font-bold",
   rejected: "border-border text-muted-foreground line-through decoration-1",
   explained: "border-border text-muted-foreground",
   cleared: "border-border text-muted-foreground",
 };
 
+const STATUS_LABEL: Record<string, string> = { accepted: "dispute", rejected: "waived" };
+
 export function StatusChip({ status }: { status: string }) {
   return (
     <span className={cn("rounded-sm border px-1.5 py-px text-[10px] font-medium uppercase tracking-wide", STATUS_STYLE[status])}>
-      {status}
+      {STATUS_LABEL[status] ?? status}
     </span>
   );
 }

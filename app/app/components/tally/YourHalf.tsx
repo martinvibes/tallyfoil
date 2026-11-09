@@ -26,7 +26,7 @@ const useRefresh = () => {
 export function YourHalf({ detail }: { detail: VendorDetail }) {
   const activeRules = detail.rules.filter((rule) => rule.active);
   return (
-    <div className="space-y-6">
+    <div className="grid gap-6 @3xl:grid-cols-[1.4fr_1fr_1fr] @3xl:items-start">
       <section className="space-y-2">
         <LedgerHeading>What was agreed</LedgerHeading>
         {detail.terms.length === 0 ? (
@@ -40,7 +40,7 @@ export function YourHalf({ detail }: { detail: VendorDetail }) {
         )}
       </section>
 
-      {activeRules.length > 0 && (
+      {activeRules.length > 0 ? (
         <section className="space-y-2">
           <LedgerHeading>What you taught it</LedgerHeading>
           <ul className="space-y-2">
@@ -48,6 +48,13 @@ export function YourHalf({ detail }: { detail: VendorDetail }) {
               <RuleRow key={rule.id} rule={rule} />
             ))}
           </ul>
+        </section>
+      ) : (
+        <section className="space-y-2">
+          <LedgerHeading>What you taught it</LedgerHeading>
+          <p className="rounded-md border border-dashed border-rule p-3 text-xs text-muted-foreground">
+            Reject a finding with a reason and the audit learns it. Paste the approving email and the rule is proven, not just your word.
+          </p>
         </section>
       )}
 
