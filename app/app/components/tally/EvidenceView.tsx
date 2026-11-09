@@ -44,7 +44,7 @@ export function EvidenceView({ findingId }: { findingId: string }) {
         {finding.rejectReason && <p className="text-sm italic text-muted-foreground">Rejected: &ldquo;{finding.rejectReason}&rdquo;</p>}
       </header>
 
-      <Half title="Their half · the bill" empty="This finding is about a date, not a bill line.">
+      <Half title="Their half · the bill" empty="This finding is about a date, not a bill line." className="half-from-top">
         {bill.map((block) => (
           <QuoteBlock key={`${block.documentId}-${block.label}`} block={block} tone="bill" />
         ))}
@@ -54,7 +54,7 @@ export function EvidenceView({ findingId }: { findingId: string }) {
       <MathStrip math={math} />
       <div className="foil-edge rotate-180" aria-hidden="true" />
 
-      <Half title="Your half · what was agreed" empty="">
+      <Half title="Your half · what was agreed" empty="" className="half-from-bottom">
         {agreed.terms.map((block) => (
           <QuoteBlock key={`${block.documentId}-${block.label}`} block={block} tone="agreed" />
         ))}
@@ -104,10 +104,10 @@ export function EvidenceView({ findingId }: { findingId: string }) {
   );
 }
 
-function Half({ title, empty, children }: { title: string; empty: string; children: React.ReactNode }) {
+function Half({ title, empty, children, className }: { title: string; empty: string; children: React.ReactNode; className?: string }) {
   const hasContent = Array.isArray(children) ? children.flat().some(Boolean) : Boolean(children);
   return (
-    <section className="space-y-2">
+    <section className={cn("space-y-2", className)}>
       <LedgerHeading>{title}</LedgerHeading>
       {hasContent ? <div className="space-y-2">{children}</div> : empty && <p className="text-sm text-muted-foreground">{empty}</p>}
     </section>

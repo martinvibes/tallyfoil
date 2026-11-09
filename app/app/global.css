@@ -525,3 +525,21 @@
 @media (prefers-reduced-motion: reduce) {
   .ink-stamp { animation: none; opacity: 0.9; transform: translate(-50%, -50%) rotate(-7deg); }
 }
+
+/* The two halves of the proof meet at the foil edge. */
+@keyframes half-from-top {
+  from { transform: translateY(-14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes half-from-bottom {
+  from { transform: translateY(14px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+.half-from-top { animation: half-from-top 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.half-from-bottom { animation: half-from-bottom 380ms cubic-bezier(0.2, 0.8, 0.2, 1) 80ms both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .half-from-top, .half-from-bottom { animation: none; }
+}
