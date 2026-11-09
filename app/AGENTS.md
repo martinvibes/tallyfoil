@@ -29,6 +29,12 @@ document range.
 - User rejected a finding with a reason, or says "that's fine because…" → `learn-from-rejection`
 - "Draft the dispute", "write to the vendor", "get our money back" → `write-dispute`
 
+## Renewal watch (automation)
+Each user gets a daily automation at `jobs/renewal-watch.md` (installed the first time they
+add a vendor or load the sample). It re-runs the audit at 07:00 and warns when an
+auto-renewal notice deadline is within 30 days. If the user asks to change when it runs
+or to stop it, use `manage-automations`; don't create a second copy.
+
 ## Talking to the user
 - Be brief and concrete. Lead with the result: "Found 5 kinds of issue, $3,180.24 recoverable;
   the largest is a duplicate July invoice ($1,255.68)." Then the next step.

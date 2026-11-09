@@ -1,6 +1,7 @@
 import { defineAction } from "@agent-native/core/action";
 import { z } from "zod";
 
+import { ensureRenewalWatch } from "../server/tally/renewal-watch.js";
 import { loadSampleData } from "../server/tally/samples.js";
 import { ownerOf } from "../server/tally/session.js";
 
@@ -10,6 +11,7 @@ export default defineAction({
   schema: z.object({}),
   run: async (_args, ctx) => {
     const { vendors, documentsAdded } = await loadSampleData(ownerOf(ctx));
+    await ensureRenewalWatch(ownerOf(ctx));
     return {
       id: vendors[0]?.id ?? "",
       vendors,

@@ -2,6 +2,7 @@ import { defineAction } from "@agent-native/core/action";
 import { z } from "zod";
 
 import { ensureVendor } from "../server/tally/records.js";
+import { ensureRenewalWatch } from "../server/tally/renewal-watch.js";
 import { ownerOf } from "../server/tally/session.js";
 
 export default defineAction({
@@ -14,6 +15,7 @@ export default defineAction({
   }),
   run: async ({ name, kind }, ctx) => {
     const { vendor, created } = await ensureVendor(ownerOf(ctx), { name, kind });
+    await ensureRenewalWatch(ownerOf(ctx));
     return {
       id: vendor.id,
       vendor: { id: vendor.id, name: vendor.name, kind: vendor.kind },
