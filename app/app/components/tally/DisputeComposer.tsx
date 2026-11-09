@@ -270,6 +270,7 @@ function GuardedField({
           id={id}
           value={value}
           disabled={disabled}
+          spellCheck={false}
           rows={singleLine ? 1 : 3}
           onChange={(event) => onChange(singleLine ? event.target.value.replace(/\n/g, " ") : event.target.value)}
           onScroll={(event) => mirrorRef.current?.scrollTo({ top: event.currentTarget.scrollTop })}

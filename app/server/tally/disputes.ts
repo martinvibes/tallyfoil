@@ -8,7 +8,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { formatUsd } from "../audit/money.js";
 import { getDb, schema } from "../db/index.js";
-import { type DisputeLine, type Prose, composeDispute, guardProse } from "./dispute-compose.js";
+import { type DisputeLine, type Prose, composeDispute, guardProse, sortedLines } from "./dispute-compose.js";
 import { CHECK_LABELS } from "./format.js";
 import { isDeadline, isStanding } from "./ledger.js";
 import { requireVendor } from "./records.js";
@@ -139,7 +139,7 @@ export const disputeView = async (owner: string, disputeId: string) => {
     intro: dispute.intro,
     closing: dispute.closing,
     findingIds: dispute.findingIds,
-    lines: lines.map((line) => ({ ...line, amount: formatUsd(line.amountCents) })),
+    lines: sortedLines(lines).map((line) => ({ ...line, amount: formatUsd(line.amountCents) })),
     evidenceTableMd: composed.tableMd,
     totalCents: composed.totalCents,
     total: formatUsd(composed.totalCents),

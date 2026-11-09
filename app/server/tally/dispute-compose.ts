@@ -29,12 +29,12 @@ export interface ComposedDispute {
   body: string;
 }
 
-const sorted = (lines: readonly DisputeLine[]) => [...lines].sort((a, b) => a.periodStart.localeCompare(b.periodStart));
+export const sortedLines = (lines: readonly DisputeLine[]) => [...lines].sort((a, b) => a.periodStart.localeCompare(b.periodStart));
 
 const cell = (text: string) => text.replace(/\|/g, "\\|").replace(/\n/g, " ");
 
 export const composeDispute = (lines: readonly DisputeLine[], prose: Prose): ComposedDispute => {
-  const rows = sorted(lines);
+  const rows = sortedLines(lines);
   const totalCents = rows.reduce((sum, line) => sum + line.amountCents, 0);
 
   const tableMd = [
