@@ -12,7 +12,10 @@ import { MIGRATIONS } from "../db/migrations";
 import { runAudit } from "./audit-runner";
 import { COBALT_TERMS, HALCYON_INVOICE, HALCYON_TERMS, readCobaltInvoice } from "./fixtures/sample-agent";
 import { groundInvoices, groundTerms } from "./grounding";
+import { draftDispute } from "./disputes";
 import { loadSampleData } from "./samples";
+import { addDocument } from "./records";
+import { addVendorRule } from "./steering";
 import { saveInvoices, saveTerms, saveUsageTotals } from "./records";
 import { getFindingDetail, getVendorDetail } from "./views";
 
@@ -98,5 +101,39 @@ describe("sample audit pipeline", () => {
     const again = await runAudit(OWNER);
     expect(again.vendors.every((v) => v.opened === 0 && v.resolved === 0)).toBe(true);
     expect(again.after.recoverableCents).toBe(176904);
+  });
+
+  it("proves a rule with the approval line from a pasted email", async () => {
+    const { document } = await addDocument(OWNER, {
+      vendorId: cobaltId,
+      kind: "note",
+      name: "approval-email.txt",
+      text: "From: Ada\nDate: 28 March 2026\n\nApproved: please raise our Cobalt plan to 48 seats from April.\n",
+    });
+    const { proven } = await addVendorRule(OWNER, {
+      vendorId: cobaltId,
+      rule: { type: "waive_check", check: "DUPLICATE_BILLING", periodFrom: "2030-01-01", periodTo: "2030-01-01" },
+      reason: "test",
+      proof: { documentId: document.id, quotes: ["Approved: please raise our Cobalt plan to 48 seats"] },
+      createdBy: "user",
+    });
+    expect(proven).toBe(true);
+    await expect(
+      addVendorRule(OWNER, {
+        vendorId: cobaltId,
+        rule: { type: "override_term", key: "seat_cap", value: 50 },
+        reason: "test",
+        proof: { documentId: document.id, quotes: ["Approved: please raise our Cobalt plan to 48 seats"] },
+        createdBy: "user",
+      }),
+    ).rejects.toMatchObject({ errorCode: "value_not_in_quote" });
+  });
+
+  it("blocks a dispute whose prose invents an amount", async () => {
+    await expect(
+      draftDispute(OWNER, { vendorId: cobaltId, subject: "Billing", intro: "You owe us $5,000.", closing: "Thanks." }),
+    ).rejects.toMatchObject({ errorCode: "unverified_amount" });
+    const ok = await draftDispute(OWNER, { vendorId: cobaltId, subject: "Billing", intro: "See the charges itemized below.", closing: "Thanks." });
+    expect(ok.totalCents).toBeGreaterThan(0);
   });
 });

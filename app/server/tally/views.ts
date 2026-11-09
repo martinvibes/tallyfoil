@@ -14,6 +14,7 @@ import type { EvidenceJson } from "../db/schema.js";
 import { type Excerpt, excerpt } from "./excerpt.js";
 import { CHECK_LABELS, TERM_LABELS, formatTermValue } from "./format.js";
 import { type LedgerTotals, isDeadline, isStanding, ledgerTotals } from "./ledger.js";
+import { listDisputes } from "./disputes.js";
 import { linesFor, ofVendor, requireVendor } from "./records.js";
 
 type FindingRow = typeof schema.findings.$inferSelect;
@@ -207,7 +208,7 @@ const tallyTimeline = (invoices: ReadonlyArray<{ periodStart: string; totalCents
 export const getVendorDetail = async (owner: string, vendorId: string) => {
   const db = getDb();
   const vendor = await requireVendor(owner, vendorId);
-  const [documents, terms, rules, invoices, usage, findings, runs] = await Promise.all([
+  const [documents, terms, rules, invoices, usage, findings, runs, disputes] = await Promise.all([
     db
       .select({
         id: schema.documents.id,
@@ -226,6 +227,7 @@ export const getVendorDetail = async (owner: string, vendorId: string) => {
     db.select().from(schema.usageTotals).where(ofVendor(schema.usageTotals, owner, vendorId)).orderBy(schema.usageTotals.meter, schema.usageTotals.periodStart),
     db.select().from(schema.findings).where(ofVendor(schema.findings, owner, vendorId)),
     latestRuns(owner),
+    listDisputes(owner, vendorId),
   ]);
   const lines = await linesFor(
     owner,
@@ -303,6 +305,7 @@ export const getVendorDetail = async (owner: string, vendorId: string) => {
     findingGroups: groupFindings(findings),
     findings: [...findings].sort((a, b) => a.periodStart.localeCompare(b.periodStart)).map(findingSummary),
     timeline: tallyTimeline(invoices, findings),
+    disputes: disputes.map((dispute) => ({ ...dispute, amount: formatUsd(dispute.amountCents) })),
   };
 };
 

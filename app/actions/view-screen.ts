@@ -2,6 +2,7 @@ import { defineAction } from "@agent-native/core/action";
 import { readAppState } from "@agent-native/core/application-state";
 import { z } from "zod";
 
+import { disputeView } from "../server/tally/disputes.js";
 import { numberedLines, requireDocument } from "../server/tally/records.js";
 import { ownerOf } from "../server/tally/session.js";
 import { type VendorDetail, getFindingDetail, getOverview, getVendorDetail } from "../server/tally/views.js";
@@ -73,6 +74,7 @@ export default defineAction({
         ...numberedLines(document.text, Math.max(1, firstLine - 5), firstLine + 40),
       };
     }
+    if (navigation?.disputeId) screen.dispute = await disputeView(owner, navigation.disputeId);
     if (!navigation || navigation.view === "home") screen.overview = await getOverview(owner);
     return screen;
   },
