@@ -1,0 +1,10 @@
+diff --git a/dist/shared/password-policy.js b/dist/shared/password-policy.js
+index f1452867bb05de62e47e91f6b5a0cf9b813d69a7..040e7aac7c46c9b31172d8c84b7db3dc159cd1e8 100644
+--- a/dist/shared/password-policy.js
++++ b/dist/shared/password-policy.js
+@@ -1,4 +1,4 @@
+-export const PASSWORD_MIN_LENGTH = 12;
++export const PASSWORD_MIN_LENGTH = 8;
+ export const PASSWORD_MAX_LENGTH = 128;
+ export const PASSWORD_MIN_LENGTH_MESSAGE = `Choose a password with at least ${PASSWORD_MIN_LENGTH} characters.`;
+ export const PASSWORD_MAX_LENGTH_MESSAGE = `Choose a password with no more than ${PASSWORD_MAX_LENGTH} characters.`;
