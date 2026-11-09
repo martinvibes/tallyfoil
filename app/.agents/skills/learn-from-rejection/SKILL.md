@@ -16,11 +16,23 @@ description: Turn a user's reason for rejecting a finding into a vendor rule, re
    - "That duplicate was already credited" → `waive_check`
      `{check: "DUPLICATE_BILLING", periodFrom, periodTo}`.
    - A one-off that shouldn't generalize → no rule; leave it rejected and say so.
-3. Ask one short question only if the scope is genuinely unclear (e.g. which month the
+3. **Get proof.** A rule backed by the approving email beats "your word".
+   - If the message context names a proof `documentId` (the user pasted the email in the
+     reject box), `read-document` it and copy 1–3 lines that state the approval
+     **exactly**, including the value (e.g. "we approve increasing the seat cap to 48").
+   - If there is no proof document, ask once: "Do you have the email or note that approved
+     this? Paste it and I'll attach it as proof." If they paste it, `add-document` it with
+     `kind: "note"` and the vendor's id, then read it and quote it as above. If they say no,
+     save the rule without proof — it shows as **Your word**.
+4. Ask one short question only if the scope is genuinely unclear (e.g. which month the
    approval started). Otherwise proceed.
-4. `add-vendor-rule` with `reason` = the user's words verbatim. The action re-runs the
-   audit and returns the delta.
-5. Report in one or two sentences using only returned numbers: what the rule is, which
-   findings it explained, and the new recoverable total. Example: "Saved the rule *seat
-   cap 48 from April 2026*. The seat finding is now explained; the price-cap finding grew
-   because it now covers 48 seats. Recoverable is $1,769.04 (was $3,180.24)."
+5. `add-vendor-rule` with `reason` = the user's words verbatim, and `proof:
+   {documentId, quotes}` when you have it. The action checks every quote against the
+   document and re-runs the audit; if it fails with `evidence_not_found` or
+   `value_not_in_quote`, re-read the lines and fix the quote — never drop the proof to make
+   it pass.
+6. Report in one or two sentences using only returned numbers: what the rule is, whether
+   it is proven by email or on the user's word, which findings it explained, and the new
+   recoverable total. Example: "Saved *seat cap 48 from April 2026*, proven by Dana's email
+   of 12 March. The seat finding is now explained; the price-cap finding grew because it
+   now covers 48 seats. Recoverable is $1,769.04 (was $3,180.24)."
