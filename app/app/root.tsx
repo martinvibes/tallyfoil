@@ -24,6 +24,8 @@ import type { LinksFunction } from "react-router";
 import { Layout as AppLayout } from "@/components/layout/Layout";
 import { AppToolkitProvider } from "@/components/ui/toolkit-provider";
 import { useNavigationState } from "@/hooks/use-navigation-state";
+import { useCelebrateWins } from "@/hooks/use-celebrate-wins";
+import { useQueryErrorToasts } from "@/hooks/use-query-error-toasts";
 import { useRefreshOnAgentWrites } from "@/hooks/use-refresh-on-agent-writes";
 import { APP_TITLE } from "@/lib/app-config";
 import {
@@ -97,6 +99,8 @@ function DbSyncSetup() {
   const qc = useQueryClient();
   useNavigationState();
   useRefreshOnAgentWrites();
+  useQueryErrorToasts();
+  useCelebrateWins();
   useDbSync({
     queryClient: qc,
     ignoreSource: TAB_ID,

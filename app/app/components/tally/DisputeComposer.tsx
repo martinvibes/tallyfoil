@@ -7,6 +7,7 @@ import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { celebrate } from "@/lib/celebrate";
 import { type DisputeView, findMoneyTokens, formatUsd } from "@/lib/tally";
 import { cn } from "@/lib/utils";
 import { OVERVIEW_PATH, pathForLocation } from "@shared/routes";
@@ -80,6 +81,7 @@ function Composer({ dispute }: { dispute: DisputeView }) {
       if (dirty) await callAction("update-dispute", { disputeId: dispute.id, ...prose, expectedRevision: dispute.revision });
       await callAction("approve-dispute", { disputeId: dispute.id });
       await queryClient.invalidateQueries();
+      celebrate("approved");
       toast.success("Approved. Copy it or open it in your mail app to send.");
     } catch (error) {
       toast.error(actionErrorMessage(error));
