@@ -24,6 +24,7 @@ import type { LinksFunction } from "react-router";
 import { Layout as AppLayout } from "@/components/layout/Layout";
 import { AppToolkitProvider } from "@/components/ui/toolkit-provider";
 import { useNavigationState } from "@/hooks/use-navigation-state";
+import { useRefreshOnAgentWrites } from "@/hooks/use-refresh-on-agent-writes";
 import { APP_TITLE } from "@/lib/app-config";
 import {
   HOME_PATH,
@@ -95,6 +96,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 function DbSyncSetup() {
   const qc = useQueryClient();
   useNavigationState();
+  useRefreshOnAgentWrites();
   useDbSync({
     queryClient: qc,
     ignoreSource: TAB_ID,
