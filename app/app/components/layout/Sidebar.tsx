@@ -29,7 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { NotchMark } from "@/components/tally/primitives";
+import { TallyfoilMark } from "@/components/tally/TallyfoilMark";
 import { SidebarVendors } from "@/components/tally/SidebarVendors";
 import { APP_TITLE } from "@/lib/app-config";
 import { chatThreadPath, HOME_PATH, threadIdFromPath } from "@/lib/chat-paths";
@@ -375,7 +375,7 @@ export function Sidebar({
                 aria-label={APP_TITLE}
                 className="flex size-8 items-center justify-center rounded outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
               >
-                <NotchMark className="size-6" />
+                <TallyfoilMark className="size-7" />
               </Link>
             </TooltipTrigger>
             <TooltipContent side="right">{APP_TITLE}</TooltipContent>
@@ -386,7 +386,7 @@ export function Sidebar({
               to="/"
               className="flex min-w-0 flex-1 items-center gap-3 rounded outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
             >
-              <NotchMark className="size-6 shrink-0" />
+              <TallyfoilMark className="size-7" />
               <span className="truncate text-sm font-semibold text-sidebar-accent-foreground">
                 {APP_TITLE}
               </span>

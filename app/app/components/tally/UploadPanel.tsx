@@ -1,6 +1,7 @@
 import { sendToAgentChat } from "@agent-native/core/client/agent-chat";
 import { actionErrorMessage, callAction } from "@agent-native/core/client/hooks";
-import { IconFileText, IconUpload, IconX } from "@tabler/icons-react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@agent-native/toolkit/ui/dialog";
+import { IconArrowRight, IconFileText, IconLoader2, IconLock, IconUpload, IconX } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -8,6 +9,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type DocumentKind, type ExtractedFile, extractText } from "@/lib/extract-text";
+import { cn } from "@/lib/utils";
+
+import { TallyfoilMark } from "./TallyfoilMark";
 
 const KIND_LABELS: Record<DocumentKind, string> = {
   contract: "Contract",
@@ -20,11 +24,26 @@ const KIND_LABELS: Record<DocumentKind, string> = {
 type VendorKind = "seat_subscription" | "usage_metered";
 const NEW_VENDOR = "__new__";
 
+const BILLING_MODELS: { kind: VendorKind; label: string; hint: string }[] = [
+  { kind: "seat_subscription", label: "Per seat", hint: "Licenses billed each month" },
+  { kind: "usage_metered", label: "Usage", hint: "Tokens, calls or units" },
+];
+
+const fieldLabel = "text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
+
 /**
- * Upload bills and contracts for a vendor. Text is extracted here in the
- * browser; the actions store it; the agent then reads and records it.
+ * The upload modal. Text is extracted here in the browser; the actions store
+ * it; the agent then reads and records it, and audits the vendor.
  */
-export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: ReadonlyArray<{ id: string; name: string }>; onClose: () => void; defaultVendorId?: string | undefined }) {
+export function UploadPanel({
+  vendors,
+  onClose,
+  defaultVendorId,
+}: {
+  vendors: ReadonlyArray<{ id: string; name: string }>;
+  onClose: () => void;
+  defaultVendorId?: string | undefined;
+}) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [vendorId, setVendorId] = useState(defaultVendorId ?? vendors[0]?.id ?? NEW_VENDOR);
@@ -32,6 +51,11 @@ export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: Re
   const [newKind, setNewKind] = useState<VendorKind>("seat_subscription");
   const [files, setFiles] = useState<ExtractedFile[]>([]);
   const [busy, setBusy] = useState<"reading" | "saving" | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const isNew = vendorId === NEW_VENDOR;
+  const missingName = isNew && newName.trim().length === 0;
+  const blocker = files.length === 0 ? "Add at least one file." : missingName ? "Name the vendor." : null;
 
   const addFiles = async (list: FileList | null) => {
     if (!list || list.length === 0) return;
@@ -39,30 +63,27 @@ export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: Re
     try {
       const extracted = await Promise.all([...list].map(extractText));
       const empty = extracted.filter((file) => file.text.length === 0);
-      if (empty.length > 0) toast.error(`No text found in ${empty.map((f) => f.name).join(", ")}. Scanned PDFs need OCR first.`);
+      if (empty.length > 0) {
+        toast.error(`No text found in ${empty.map((f) => f.name).join(", ")}`, { description: "Scanned PDFs need OCR first. Try the text version or a CSV export." });
+      }
       setFiles((current) => [...current, ...extracted.filter((file) => file.text.length > 0)]);
     } catch (error) {
-      toast.error(`Could not read that file: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error("Couldn't read that file", { description: error instanceof Error ? error.message : String(error) });
     } finally {
       setBusy(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   };
 
-  const setKind = (index: number, kind: DocumentKind) =>
-    setFiles((current) => current.map((file, i) => (i === index ? { ...file, kind } : file)));
+  const setKind = (index: number, kind: DocumentKind) => setFiles((current) => current.map((file, i) => (i === index ? { ...file, kind } : file)));
 
   const submit = async () => {
-    if (files.length === 0) return;
+    if (blocker) return;
     setBusy("saving");
     try {
       let targetId = vendorId;
       let vendorName = vendors.find((v) => v.id === vendorId)?.name ?? "";
-      if (vendorId === NEW_VENDOR) {
-        if (!newName.trim()) {
-          toast.error("Name the vendor first.");
-          return;
-        }
+      if (isNew) {
         const created = await callAction<{ id: string; vendor: { name: string } }>("create-vendor", { name: newName.trim(), kind: newKind });
         targetId = created.id;
         vendorName = created.vendor.name;
@@ -73,7 +94,9 @@ export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: Re
         if (!result.duplicate) added += 1;
       }
       await queryClient.invalidateQueries();
-      toast.success(added === files.length ? `Added ${added} documents to ${vendorName}.` : `Added ${added}; ${files.length - added} were already there.`);
+      toast.success(added === files.length ? `Added ${added} document${added === 1 ? "" : "s"} to ${vendorName}` : `Added ${added}; ${files.length - added} were already there`, {
+        description: "The agent is auditing now. Follow along in the chat.",
+      });
       sendToAgentChat({
         message: `Audit ${vendorName}`,
         context: `The user just uploaded ${files.length} document(s) for vendor ${vendorName} (id ${targetId}): ${files.map((f) => `${f.name} [${f.kind}]`).join(", ")}. Use the audit-vendor skill.`,
@@ -81,120 +104,161 @@ export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: Re
       });
       onClose();
     } catch (error) {
-      toast.error(actionErrorMessage(error));
+      toast.error("Couldn't add those documents", { description: actionErrorMessage(error) });
     } finally {
       setBusy(null);
     }
   };
 
   return (
-    <section className="tally-slide-in rounded-md border border-rule bg-card p-5" aria-label="Upload documents">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="ledger-numeral text-xl font-medium">Add bills and contracts</h2>
-          <p className="mt-1 text-sm text-muted-foreground">PDF, CSV or text. Text is extracted in your browser; the agent reads it and quotes every figure.</p>
-        </div>
-        <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close">
-          <IconX className="size-4" />
-        </Button>
-      </div>
-
-      <div className="mt-5 grid gap-4 md:grid-cols-[1fr_1.4fr]">
-        <div className="space-y-2">
-          <label className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground" htmlFor="upload-vendor">
-            Vendor
-          </label>
-          <select
-            id="upload-vendor"
-            value={vendorId}
-            onChange={(event) => setVendorId(event.target.value)}
-            className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-          >
-            {vendors.map((vendor) => (
-              <option key={vendor.id} value={vendor.id}>
-                {vendor.name}
-              </option>
-            ))}
-            <option value={NEW_VENDOR}>New vendor…</option>
-          </select>
-          {vendorId === NEW_VENDOR && (
-            <div className="space-y-2">
-              <Input placeholder="Vendor name, as on the bill" value={newName} onChange={(event) => setNewName(event.target.value)} />
-              <div className="flex gap-2 text-sm" role="radiogroup" aria-label="Billing model">
-                {(["seat_subscription", "usage_metered"] as const).map((kind) => (
-                  <button
-                    key={kind}
-                    type="button"
-                    role="radio"
-                    aria-checked={newKind === kind}
-                    onClick={() => setNewKind(kind)}
-                    className={`flex-1 rounded-md border px-2 py-1.5 ${newKind === kind ? "border-foreground bg-foreground text-background" : "border-input"}`}
-                  >
-                    {kind === "seat_subscription" ? "Per seat" : "Usage"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+    <Dialog open onOpenChange={(open) => !open && busy !== "saving" && onClose()}>
+      <DialogContent className="flex flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-2xl" closeLabel="Close">
+        <div className="night-panel relative shrink-0 px-6 pb-5 pt-6">
+          <div className="flex items-center gap-2.5">
+            <TallyfoilMark className="size-7 rounded-[8px] ring-1 ring-white/15" />
+            <span className="font-figure text-[11px] uppercase tracking-[0.22em] text-white/55">Tallyfoil</span>
+          </div>
+          <DialogTitle className="mt-4 font-ledger text-2xl font-medium sm:text-3xl leading-tight tracking-tight text-[#f6efe4]">
+            Add both halves of the deal
+          </DialogTitle>
+          <DialogDescription className="mt-2 max-w-lg text-sm leading-relaxed text-white/60">
+            The contract says what you agreed. The bills say what you paid. Drop them in and Tallyfoil proves every place they disagree.
+          </DialogDescription>
         </div>
 
-        <div className="space-y-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Files</span>
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={(event) => {
-              event.preventDefault();
-              void addFiles(event.dataTransfer.files);
-            }}
-            className="flex w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-rule px-4 py-6 text-sm text-muted-foreground hover:border-foreground/40"
-          >
-            <IconUpload className="size-5" />
-            {busy === "reading" ? "Reading…" : "Drop files or click to choose"}
-          </button>
-          <input ref={inputRef} type="file" multiple accept=".pdf,.csv,.txt,.eml,.md" className="hidden" onChange={(event) => void addFiles(event.target.files)} />
-          {files.length > 0 && (
-            <ul className="divide-y divide-rule rounded-md border border-rule">
-              {files.map((file, index) => (
-                <li key={`${file.name}-${index}`} className="flex items-center gap-2 px-3 py-2 text-sm">
-                  <IconFileText className="size-4 shrink-0 text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                  <select
-                    value={file.kind}
-                    onChange={(event) => setKind(index, event.target.value as DocumentKind)}
-                    aria-label={`Kind of ${file.name}`}
-                    className="h-7 rounded border border-input bg-background px-1 text-xs"
-                  >
-                    {Object.entries(KIND_LABELS).map(([kind, label]) => (
-                      <option key={kind} value={kind}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}
-                    aria-label={`Remove ${file.name}`}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <IconX className="size-3.5" />
-                  </button>
-                </li>
+        <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto px-6 py-5 md:grid-cols-[1fr_1.3fr]">
+          <div className="space-y-3">
+            <label className={fieldLabel} htmlFor="upload-vendor">
+              Vendor
+            </label>
+            <select
+              id="upload-vendor"
+              value={vendorId}
+              onChange={(event) => setVendorId(event.target.value)}
+              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-notch focus-visible:ring-2 focus-visible:ring-notch/20"
+            >
+              {vendors.map((vendor) => (
+                <option key={vendor.id} value={vendor.id}>
+                  {vendor.name}
+                </option>
               ))}
-            </ul>
-          )}
-        </div>
-      </div>
+              <option value={NEW_VENDOR}>+ New vendor</option>
+            </select>
+            {isNew && (
+              <div className="space-y-3">
+                <Input
+                  placeholder="Vendor name, as on the bill"
+                  value={newName}
+                  onChange={(event) => setNewName(event.target.value)}
+                  aria-label="Vendor name"
+                  className="h-10 rounded-lg"
+                  autoFocus
+                />
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="How this vendor bills">
+                  {BILLING_MODELS.map(({ kind, label, hint }) => (
+                    <button
+                      key={kind}
+                      type="button"
+                      role="radio"
+                      aria-checked={newKind === kind}
+                      onClick={() => setNewKind(kind)}
+                      className={cn(
+                        "rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-notch/40",
+                        newKind === kind ? "border-notch bg-notch/[0.07]" : "border-input hover:border-foreground/30",
+                      )}
+                    >
+                      <span className="block text-sm font-medium">{label}</span>
+                      <span className="block text-[11px] text-muted-foreground">{hint}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
-      <div className="mt-5 flex justify-end gap-2">
-        <Button variant="ghost" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={submit} disabled={files.length === 0 || busy !== null}>
-          {busy === "saving" ? "Saving…" : `Add ${files.length || ""} and audit`}
-        </Button>
-      </div>
-    </section>
+          <div className="space-y-3">
+            <span className={fieldLabel}>Files</span>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragging(true);
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragging(false);
+                void addFiles(event.dataTransfer.files);
+              }}
+              className={cn(
+                "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-7 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-notch/40",
+                dragging ? "border-notch bg-notch/[0.06]" : "border-rule hover:border-foreground/30 hover:bg-shade/50",
+              )}
+            >
+              <span className={cn("flex size-10 items-center justify-center rounded-full", dragging ? "bg-notch text-white" : "bg-shade text-foreground")}>
+                {busy === "reading" ? <IconLoader2 className="size-5 animate-spin" /> : <IconUpload className="size-5" />}
+              </span>
+              <span className="text-sm font-medium">{busy === "reading" ? "Reading your files…" : dragging ? "Drop to add" : "Drop files here or click to choose"}</span>
+              <span className="font-figure text-[10px] uppercase tracking-[0.14em] text-muted-foreground">PDF · CSV · TXT · EML</span>
+            </button>
+            <input ref={inputRef} type="file" multiple accept=".pdf,.csv,.txt,.eml,.md" className="hidden" onChange={(event) => void addFiles(event.target.files)} />
+            {files.length > 0 && (
+              <ul className="max-h-48 divide-y divide-rule overflow-y-auto rounded-lg border border-rule">
+                {files.map((file, index) => (
+                  <li key={`${file.name}-${index}`} className="flex items-center gap-2 px-3 py-2 text-sm">
+                    <IconFileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                    <select
+                      value={file.kind}
+                      onChange={(event) => setKind(index, event.target.value as DocumentKind)}
+                      aria-label={`Kind of ${file.name}`}
+                      className="h-7 rounded-md border border-input bg-background px-1.5 text-xs"
+                    >
+                      {Object.entries(KIND_LABELS).map(([kind, label]) => (
+                        <option key={kind} value={kind}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}
+                      aria-label={`Remove ${file.name}`}
+                      className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <IconX className="size-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-rule bg-shade/40 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <IconLock className="size-3.5 shrink-0" aria-hidden="true" />
+            Read in your browser. Only the text is sent.
+          </p>
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={busy === "saving"}>
+              Cancel
+            </Button>
+            <Button onClick={() => void submit()} disabled={blocker !== null || busy !== null} title={blocker ?? undefined} className="bg-notch text-white hover:bg-notch/90">
+              {busy === "saving" ? (
+                <>
+                  <IconLoader2 className="size-4 animate-spin" /> Adding…
+                </>
+              ) : (
+                <>
+                  {files.length > 0 ? `Add ${files.length} and audit` : "Add and audit"} <IconArrowRight className="size-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

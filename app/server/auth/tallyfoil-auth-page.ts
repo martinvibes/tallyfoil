@@ -47,6 +47,11 @@ const STYLES = String.raw`
   background: linear-gradient(90deg, transparent, var(--tf-notch), transparent); opacity: 0.7;
 }
 #agent-native-auth-root h1 { font-family: var(--tf-serif); font-weight: 500; font-size: 2rem; line-height: 1.1; letter-spacing: -0.02em; color: var(--tf-ink); margin-bottom: 0.375rem; }
+#agent-native-auth-root h1::before {
+  content: ""; display: block; width: 44px; height: 44px; margin-bottom: 1.25rem; border-radius: 12px;
+  background: url(/favicon.svg) center / contain no-repeat;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 10px 24px -10px rgba(255,90,54,0.55);
+}
 #agent-native-auth-root .subtitle { font-size: 0.9rem; color: var(--tf-muted); margin-bottom: 1.5rem; }
 #agent-native-auth-root .tabs { padding: 4px; margin-bottom: 1.5rem; background: var(--tf-shade); border: 1px solid var(--tf-rule); border-radius: 12px; }
 #agent-native-auth-root .tab { padding: 0.55rem 0.75rem; border-radius: 9px; color: var(--tf-muted); font-size: 0.85rem; font-weight: 500; transition: background 160ms, color 160ms; }

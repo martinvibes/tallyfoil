@@ -49,16 +49,6 @@ export function CountUpMoney({ cents, className }: { cents: number; className?: 
 }
 
 /** The mark: a tally stick split by a notched line. */
-export function NotchMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={cn("size-5", className)} aria-hidden="true">
-      <rect x="3" y="2" width="18" height="20" rx="2" fill="currentColor" opacity="0.12" />
-      <path d="M3 12 L6 9.5 L9 12 L12 9.5 L15 12 L18 9.5 L21 12" fill="none" stroke="hsl(var(--notch))" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M7 4v4M11 4v4M15 4v4M7 16v4M11 16v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export function SampleBadge() {
   return (
     <span className="rounded-sm border border-dashed border-amber/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber">

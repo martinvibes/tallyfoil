@@ -1,7 +1,7 @@
 {
   "name": "Tallyfoil",
   "short_name": "Tallyfoil",
-  "description": "Workspace app for Tallyfoil.",
+  "description": "Audits vendor bills against your contracts and proves every overcharge.",
   "start_url": "./home",
   "background_color": "#111111",
   "theme_color": "#18181B",

@@ -16,7 +16,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
-import { NotchMark } from "./primitives";
+import { TallyfoilMark } from "./TallyfoilMark";
 
 const STEPS: { icon: Icon; title: string; body: string }[] = [
   {
@@ -69,7 +69,7 @@ export function EmptyOverview({ onUpload }: { onUpload: () => void }) {
       <div className="night-panel relative grid items-center gap-8 px-6 py-8 md:grid-cols-[1.05fr_1fr] md:px-10 md:py-10">
         <div>
           <div className="flex items-center gap-2.5">
-            <NotchMark className="size-7 text-white" />
+            <TallyfoilMark className="size-8 ring-1 ring-white/15 rounded-[9px]" />
             <span className="font-figure text-[11px] uppercase tracking-[0.22em] text-white/50">Vendor bill auditor</span>
           </div>
           <h2 id="welcome-title" className="mt-5 font-ledger text-5xl font-medium leading-none tracking-tight md:text-6xl">
