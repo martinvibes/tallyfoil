@@ -1,33 +1,17 @@
-# Chat
+# Tallyfoil app
 
-The minimal agent-native starter app — a clean, ChatGPT-style shell with chat at
-the center, durable threads, standard app navigation, auth, live sync, and
-actions. Start here when you want a real browser app to build on without
-committing to a domain template.
-
-**Live app: [chat.agent-native.com](https://chat.agent-native.com?utm_source=github&utm_medium=referral&utm_content=chat-readme)**
-
-Chat is the basic agent-native app starting point. It gives you the app-agent
-loop wired end to end and one example action, so you can add your own UI, data,
-and actions on top.
-
-## Features
-
-- ChatGPT-style shell with a threads list and durable chat history.
-- Auth, live sync, and application state wired out of the box.
-- The action surface the agent and UI share, plus one example action to copy.
-- A minimal, brandable base for any domain app.
-
-## Develop locally
-
-Scaffold your own copy and run it:
+The Agent-Native app behind [Tallyfoil](../README.md). Scaffolded from the Agent-Native
+Chat template; see the root README for what it does and how it's built.
 
 ```bash
-npx --yes @agent-native/core@latest create my-app --standalone --template chat
-cd my-app
-corepack enable
 pnpm install
-pnpm dev
+pnpm dev            # http://localhost:8080
+pnpm test           # engine, evidence matcher, number guard
+pnpm replay-sample  # load and audit the sample set without a model
 ```
 
-Full docs: [agent-native.com/docs/template-chat](https://agent-native.com/docs/template-chat?utm_source=github&utm_medium=referral&utm_content=chat-readme).
+- `actions/` — every capability, shared by the UI and the agent
+- `server/audit/` — the deterministic audit engine, evidence matcher and number guard
+- `server/tally/` — persistence, views and dispute composition
+- `app/components/tally/` — the UI
+- `.agents/skills/` — how the in-app agent audits, learns from rejections and drafts disputes
