@@ -4,6 +4,8 @@
 
 The AI reads; code decides the money.
 
+**Try it live:** https://tallyfoil.vercel.app (create an account, then choose "Watch a sample audit").
+
 ![The overview: $3,180.24 recoverable, $15,068.16 at risk, and the mirror chart of billed vs agreed](docs/screens/overview.png)
 
 Upload a vendor's contract and invoices, plus the usage export for AI/API vendors. The
