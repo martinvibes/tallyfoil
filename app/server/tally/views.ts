@@ -15,7 +15,7 @@ import { type Excerpt, excerpt } from "./excerpt.js";
 import { CHECK_LABELS, TERM_LABELS, formatTermValue } from "./format.js";
 import { type LedgerTotals, isDeadline, isStanding, ledgerTotals } from "./ledger.js";
 import { listDisputes } from "./disputes.js";
-import { linesFor, ofVendor, requireVendor } from "./records.js";
+import { linesFor, ofVendor, requireDocument, requireVendor } from "./records.js";
 
 type FindingRow = typeof schema.findings.$inferSelect;
 type RuleRow = typeof schema.vendorRules.$inferSelect;
@@ -414,3 +414,52 @@ export const getFindingDetail = async (owner: string, findingId: string) => {
 export type FindingDetail = NonNullable<Awaited<ReturnType<typeof getFindingDetail>>>;
 export type VendorDetail = Awaited<ReturnType<typeof getVendorDetail>>;
 export type Overview = Awaited<ReturnType<typeof getOverview>>;
+
+// ---------------------------------------------------------------------------
+// Document view
+// ---------------------------------------------------------------------------
+
+export interface DocumentMark {
+  start: number;
+  end: number;
+  label: string;
+  tone: "bill" | "agreed";
+}
+
+/** A document's full text and every quote any record took from it. */
+export const getDocumentView = async (owner: string, documentId: string) => {
+  const db = getDb();
+  const document = await requireDocument(owner, documentId);
+  const vendor = await requireVendor(owner, document.vendorId);
+  const [terms, invoices, lines, rules] = await Promise.all([
+    db.select().from(schema.terms).where(ofVendor(schema.terms, owner, vendor.id)),
+    db.select().from(schema.invoices).where(ofVendor(schema.invoices, owner, vendor.id)),
+    db.select().from(schema.invoiceLines).where(ofVendor(schema.invoiceLines, owner, vendor.id)),
+    db.select().from(schema.vendorRules).where(ofVendor(schema.vendorRules, owner, vendor.id)),
+  ]);
+
+  const marks: DocumentMark[] = [];
+  const add = (evidence: EvidenceJson | null, label: string, tone: DocumentMark["tone"]) => {
+    if (evidence?.documentId !== documentId) return;
+    for (const fragment of evidence.fragments) marks.push({ start: fragment.start, end: fragment.end, label, tone });
+  };
+  for (const term of terms) add(term.evidence, `${TERM_LABELS[term.key]}: ${formatTermValue(term)}`, "agreed");
+  for (const rule of rules) if (rule.active) add(rule.proof, `Proof: ${describeRule(rule)}`, "agreed");
+  for (const invoice of invoices) add(invoice.evidence, `${invoice.invoiceNumber} · ${formatUsd(invoice.totalCents)}`, "bill");
+  for (const line of lines) add(line.evidence, `${line.description} · ${formatUsd(line.amountCents)}`, "bill");
+
+  return {
+    document: {
+      id: document.id,
+      name: document.name,
+      kind: document.kind,
+      status: document.status,
+      isSample: document.isSample,
+      text: document.text,
+    },
+    vendor: { id: vendor.id, name: vendor.name, isSample: vendor.isSample },
+    marks: marks.sort((a, b) => a.start - b.start || b.end - a.end),
+  };
+};
+
+export type DocumentView = Awaited<ReturnType<typeof getDocumentView>>;

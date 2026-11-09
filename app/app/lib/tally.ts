@@ -4,8 +4,10 @@
  */
 
 export { formatUsd } from "../../server/audit/money";
-export type { FindingDetail, Overview, VendorDetail } from "../../server/tally/views";
+export type { DocumentView, FindingDetail, Overview, VendorDetail } from "../../server/tally/views";
 export type { CheckCode } from "../../server/audit/types";
+export type { DisputeView } from "../../server/tally/disputes";
+export { findMoneyTokens } from "../../server/audit/number-guard";
 
 /** "1,255 dollars 68 cents" — what a screen reader says for an amount. */
 export const spokenUsd = (cents: number): string => {

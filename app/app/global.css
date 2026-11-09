@@ -432,3 +432,36 @@
 @media (prefers-reduced-motion: reduce) {
   .tally-slide-in { animation: none; }
 }
+
+/* Number guard: amounts in dispute prose, marked as you type. */
+.guard-ok {
+  color: transparent;
+  background: hsl(var(--verified) / 0.14);
+  box-shadow: inset 0 -2px 0 hsl(var(--verified));
+  border-radius: 2px;
+}
+
+.guard-bad {
+  color: transparent;
+  background: hsl(var(--notch) / 0.14);
+  text-decoration: underline wavy hsl(var(--notch));
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+  border-radius: 2px;
+}
+
+@keyframes guard-shake {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+.guard-shake {
+  animation: guard-shake 360ms ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guard-shake { animation: none; }
+}

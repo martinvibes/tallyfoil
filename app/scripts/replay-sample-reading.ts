@@ -19,7 +19,8 @@ import { groundInvoices, groundTerms } from "../server/tally/grounding.js";
 import { markDocument, saveInvoices, saveTerms, saveUsageTotals } from "../server/tally/records.js";
 import { loadSampleData } from "../server/tally/samples.js";
 
-const owner = process.argv[2] ?? "local@localhost";
+/** The browser's "Continue as local dev" user. */
+const owner = process.argv[2] ?? "dev@local.test";
 
 const main = async () => {
   await loadSampleData(owner);

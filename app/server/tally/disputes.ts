@@ -139,6 +139,7 @@ export const disputeView = async (owner: string, disputeId: string) => {
     intro: dispute.intro,
     closing: dispute.closing,
     findingIds: dispute.findingIds,
+    lines: lines.map((line) => ({ ...line, amount: formatUsd(line.amountCents) })),
     evidenceTableMd: composed.tableMd,
     totalCents: composed.totalCents,
     total: formatUsd(composed.totalCents),
@@ -157,6 +158,8 @@ export const approveDispute = async (owner: string, disputeId: string) => {
     .where(and(eq(schema.disputes.ownerEmail, owner), eq(schema.disputes.id, disputeId)));
   return disputeView(owner, disputeId);
 };
+
+export type DisputeView = Awaited<ReturnType<typeof disputeView>>;
 
 export const listDisputes = async (owner: string, vendorId: string) =>
   getDb()

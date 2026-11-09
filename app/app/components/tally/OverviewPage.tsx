@@ -24,7 +24,7 @@ export function OverviewPage() {
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 px-4 py-8 md:px-8">
-      <Hero overview={data} />
+      {data.vendors.length > 0 && <Hero overview={data} />}
       {data.vendors.length === 0 ? (
         <EmptyState onUpload={() => setUploading(true)} />
       ) : (
@@ -50,13 +50,14 @@ export function OverviewPage() {
 
 function Hero({ overview }: { overview: Overview }) {
   const { totals, nextDeadline } = overview;
+  const overcharges = totals.findingCount - totals.deadlineCount;
   return (
     <section className="grid gap-6 border-b border-rule pb-8 md:grid-cols-[1.4fr_1fr]">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Recoverable</p>
         <CountUpMoney cents={totals.recoverableCents} className="block text-6xl font-medium leading-none text-notch md:text-7xl" />
         <p className="mt-3 text-sm text-muted-foreground">
-          {totals.findingCount} overcharge{totals.findingCount === 1 ? "" : "s"} standing
+          {overcharges} overcharge{overcharges === 1 ? "" : "s"} standing
           {totals.acceptedCount > 0 && ` · ${totals.acceptedCount} accepted`}
           {totals.rejectedCount > 0 && ` · ${totals.rejectedCount} rejected`}
           {totals.explainedCount > 0 && ` · ${totals.explainedCount} explained by your rules`}

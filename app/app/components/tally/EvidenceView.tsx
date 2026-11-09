@@ -138,7 +138,7 @@ function Excerpt({ quote, tone }: { quote: Quote; tone: "bill" | "agreed" }) {
   const lineCount = quote.text.split("\n").length;
 
   return (
-    <div className="flex overflow-x-auto font-figure text-[12px] leading-5">
+    <div className="flex overflow-x-auto border-rule font-figure text-[12px] leading-5 [&+&]:border-t">
       <div className="select-none border-r border-rule px-2 py-2 text-right text-muted-foreground/70" aria-hidden="true">
         {Array.from({ length: lineCount }, (_, i) => (
           <div key={i}>{quote.firstLine + i}</div>
