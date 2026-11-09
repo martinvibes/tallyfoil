@@ -431,12 +431,15 @@ export const getDocumentView = async (owner: string, documentId: string) => {
   const db = getDb();
   const document = await requireDocument(owner, documentId);
   const vendor = await requireVendor(owner, document.vendorId);
-  const [terms, invoices, lines, rules] = await Promise.all([
+  const [terms, invoices, rules] = await Promise.all([
     db.select().from(schema.terms).where(ofVendor(schema.terms, owner, vendor.id)),
     db.select().from(schema.invoices).where(ofVendor(schema.invoices, owner, vendor.id)),
-    db.select().from(schema.invoiceLines).where(ofVendor(schema.invoiceLines, owner, vendor.id)),
     db.select().from(schema.vendorRules).where(ofVendor(schema.vendorRules, owner, vendor.id)),
   ]);
+  const lines = await linesFor(
+    owner,
+    invoices.filter((invoice) => invoice.documentId === documentId).map((invoice) => invoice.id),
+  );
 
   const marks: DocumentMark[] = [];
   const add = (evidence: EvidenceJson | null, label: string, tone: DocumentMark["tone"]) => {
