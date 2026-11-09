@@ -2,7 +2,7 @@ import { sendToAgentChat } from "@agent-native/core/client/agent-chat";
 import { actionErrorMessage, callAction } from "@agent-native/core/client/hooks";
 import { IconCheck, IconChevronRight, IconX } from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import { LedgerHeading, Money, SeverityLabel, StatusChip } from "./primitives";
 type Group = VendorDetail["findingGroups"][number];
 type Finding = VendorDetail["findings"][number];
 type Review = (findings: Finding[], decision: "accept" | "reject", reason?: string, approval?: string) => Promise<void>;
+/** Findings whose "why is this OK?" box is open; at most one box at a time. */
+type Rejecting = Finding[] | null;
 
 const SEVERITY_TITLES: Record<string, string> = { breach: "Breach", verify: "Verify", deadline: "Deadline" };
 const REVIEWABLE = new Set(["open", "accepted", "rejected"]);
@@ -73,8 +75,19 @@ export function FindingsList({
     );
     await reviewOnServer(findings, decision, reason, approval);
   };
+  const [rejecting, setRejecting] = useState<Rejecting>(null);
   const byId = new Map(detail.findings.map((finding) => [finding.id, finding]));
   const severities = [...new Set(detail.findingGroups.map((group) => group.severity))];
+  const groupsOf = (severity: string) => detail.findingGroups.filter((group) => group.severity === severity);
+  const ordered = severities.flatMap((severity) => groupsOf(severity).flatMap((group) => group.findingIds.flatMap((id) => byId.get(id) ?? [])));
+
+  useTriageKeys({
+    ordered,
+    selectedId,
+    onSelect,
+    onAccept: (finding) => void review([finding], "accept"),
+    onReject: (finding) => setRejecting([finding]),
+  });
 
   if (detail.findings.length === 0) {
     return (
@@ -86,13 +99,12 @@ export function FindingsList({
 
   return (
     <div className="space-y-6">
+      <KeyHints />
       {severities.map((severity) => (
         <section key={severity} className="space-y-2">
           <LedgerHeading>{SEVERITY_TITLES[severity] ?? severity}</LedgerHeading>
           <div className="divide-y divide-rule rounded-md border border-rule bg-card">
-            {detail.findingGroups
-              .filter((group) => group.severity === severity)
-              .map((group) => (
+            {groupsOf(severity).map((group) => (
                 <FindingGroup
                   key={group.check}
                   group={group}
@@ -101,6 +113,8 @@ export function FindingsList({
                   onSelect={onSelect}
                   review={review}
                   stamps={stamps}
+                  rejecting={rejecting}
+                  setRejecting={setRejecting}
                 />
               ))}
           </div>
@@ -117,6 +131,8 @@ function FindingGroup({
   onSelect,
   review,
   stamps,
+  rejecting: rejectingAny,
+  setRejecting: setRejectingAny,
 }: {
   group: Group;
   findings: Finding[];
@@ -124,10 +140,17 @@ function FindingGroup({
   onSelect: (finding: Finding) => void;
   review: Review;
   stamps: Record<string, "accept" | "reject">;
+  rejecting: Rejecting;
+  setRejecting: (value: Rejecting) => void;
 }) {
   const containsSelected = findings.some((finding) => finding.id === selectedId);
   const [open, setOpen] = useState(containsSelected || findings.length <= 2);
-  const [rejecting, setRejecting] = useState<Finding[] | null>(null);
+  /** Keyboard navigation can land inside a closed group: open it. */
+  useEffect(() => {
+    if (containsSelected) setOpen(true);
+  }, [containsSelected]);
+  const rejecting = rejectingAny?.every((finding) => findings.includes(finding)) ? rejectingAny : null;
+  const setRejecting = setRejectingAny;
   const isDeadline = group.severity === "deadline";
   const months = findings.length === 1 ? findings[0]?.periodLabel : `${findings.length} ${isDeadline ? "items" : "months"}`;
 
@@ -161,7 +184,7 @@ function FindingGroup({
       {open && (
         <ul className="pb-1">
           {findings.map((finding) => (
-            <li key={finding.id}>
+            <li key={finding.id} data-finding-id={finding.id}>
               <div
                 className={cn(
                   "group relative flex items-center gap-2 py-1.5 pl-9 pr-3 text-sm",
@@ -212,6 +235,7 @@ function RejectBox({ count, onCancel, onSubmit }: { count: number; onCancel: () 
   return (
     <form
       className="tally-slide-in mx-3 mb-2 space-y-2 rounded-md border border-rule bg-background p-3"
+      onKeyDown={(event) => event.key === "Escape" && onCancel()}
       onSubmit={(event) => {
         event.preventDefault();
         if (reason.trim()) onSubmit(reason.trim(), approval);
@@ -267,5 +291,64 @@ function Stamp({ kind }: { kind: "accept" | "reject" }) {
     >
       {kind === "accept" ? "Dispute" : "Waived"}
     </span>
+  );
+}
+
+const isTyping = (target: EventTarget | null) =>
+  target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
+
+/** J/K walk the findings (the evidence follows), D stamps dispute, W opens "why is this OK?". */
+function useTriageKeys({
+  ordered,
+  selectedId,
+  onSelect,
+  onAccept,
+  onReject,
+}: {
+  ordered: Finding[];
+  selectedId: string | undefined;
+  onSelect: (finding: Finding) => void;
+  onAccept: (finding: Finding) => void;
+  onReject: (finding: Finding) => void;
+}) {
+  useEffect(() => {
+    const index = ordered.findIndex((finding) => finding.id === selectedId);
+    const go = (finding: Finding | undefined) => {
+      if (!finding) return;
+      onSelect(finding);
+      requestAnimationFrame(() => document.querySelector(`[data-finding-id="${finding.id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
+      const key = event.key.toLowerCase();
+      const current = ordered[index];
+      if (key === "j") go(ordered[index + 1] ?? (index === -1 ? ordered[0] : undefined));
+      else if (key === "k") go(ordered[index - 1] ?? (index === -1 ? ordered[0] : undefined));
+      else if (key === "d" && current && REVIEWABLE.has(current.status)) {
+        onAccept(current);
+        window.setTimeout(() => go(ordered[index + 1]), 450);
+      } else if (key === "w" && current && REVIEWABLE.has(current.status)) onReject(current);
+      else return;
+      event.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [ordered, selectedId, onSelect, onAccept, onReject]);
+}
+
+function KeyHints() {
+  const key = "inline-flex min-w-5 justify-center rounded border border-rule bg-card px-1 font-figure text-[10px] text-foreground shadow-[0_1px_0_var(--color-rule)]";
+  return (
+    <p className="hidden items-center gap-3 text-[11px] text-muted-foreground lg:flex" aria-hidden="true">
+      <span>
+        <kbd className={key}>J</kbd> <kbd className={key}>K</kbd> walk the findings
+      </span>
+      <span>
+        <kbd className={key}>D</kbd> dispute it
+      </span>
+      <span>
+        <kbd className={key}>W</kbd> waive it, with a reason
+      </span>
+    </p>
   );
 }
