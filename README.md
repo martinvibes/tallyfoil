@@ -39,6 +39,10 @@ The table maps the engine's checks to the severity it gives each one.
 - **Dispute without invented numbers.** The agent drafts the email. A number guard checks
   every dollar amount in the prose against the ledger as you type, and approval is blocked
   while any amount is one the engine never computed.
+- **Close the loop.** When the vendor answers, paste their reply on the dispute. The
+  agent quotes the line that states the credit, and code reads the amount from the
+  vendor's own words. The dispute is marked *Recovered* or *Part recovered*, and the
+  overview shows how much has been credited back.
 
 ![Evidence view: the duplicate July invoice, quoted from both bills](docs/screens/evidence.png)
 
@@ -57,7 +61,7 @@ flowchart LR
   end
   Agent[In-app agent<br/>skills: audit-vendor ·<br/>learn-from-rejection · write-dispute]
   subgraph Server
-    Actions["23 defineAction()s<br/>record-terms · record-invoices · run-audit ·<br/>review-finding · add-vendor-rule · draft-dispute …"]
+    Actions["24 defineAction()s<br/>record-terms · record-invoices · run-audit ·<br/>review-finding · add-vendor-rule · draft-dispute …"]
     Matcher[Evidence matcher<br/>quote must exist · value must be in quote]
     Engine[Audit engine<br/>integer cents · pure functions]
     Guard[Number guard]
@@ -95,7 +99,7 @@ flowchart LR
 cd app
 pnpm install
 pnpm dev                 # http://localhost:8080 — "Continue as local dev"
-pnpm test                # audit engine, evidence matcher, number guard (112 tests)
+pnpm test                # audit engine, evidence matcher, number guard (118 tests)
 ```
 
 Connect a model in the chat panel (**Use Builder.io** or **Custom keys**), or put
