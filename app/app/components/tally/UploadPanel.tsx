@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type DocumentKind, type ExtractedFile, extractText } from "@/lib/extract-text";
-import type { Overview } from "@/lib/tally";
 
 const KIND_LABELS: Record<DocumentKind, string> = {
   contract: "Contract",
@@ -25,7 +24,7 @@ const NEW_VENDOR = "__new__";
  * Upload bills and contracts for a vendor. Text is extracted here in the
  * browser; the actions store it; the agent then reads and records it.
  */
-export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: Overview["vendors"]; onClose: () => void; defaultVendorId?: string }) {
+export function UploadPanel({ vendors, onClose, defaultVendorId }: { vendors: ReadonlyArray<{ id: string; name: string }>; onClose: () => void; defaultVendorId?: string | undefined }) {
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [vendorId, setVendorId] = useState(defaultVendorId ?? vendors[0]?.id ?? NEW_VENDOR);

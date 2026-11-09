@@ -11,6 +11,30 @@ export interface ExtractedFile {
   kind: DocumentKind;
 }
 
+interface PositionedText {
+  x: number;
+  y: number;
+  str: string;
+}
+
+/** Group text runs by baseline (rounded y), left to right, so a table row stays on one line. */
+const pageLines = (items: readonly PositionedText[]): string[] => {
+  const rows = new Map<number, PositionedText[]>();
+  for (const item of items) {
+    if (!item.str.trim()) continue;
+    const y = Math.round(item.y);
+    rows.set(y, [...(rows.get(y) ?? []), item]);
+  }
+  return [...rows.entries()]
+    .sort(([a], [b]) => b - a)
+    .map(([, row]) =>
+      row
+        .sort((a, b) => a.x - b.x)
+        .map((item) => item.str.trim())
+        .join(" "),
+    );
+};
+
 const readPdf = async (file: File): Promise<string> => {
   const pdfjs = await import("pdfjs-dist");
   const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
@@ -19,22 +43,13 @@ const readPdf = async (file: File): Promise<string> => {
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
   const pages: string[] = [];
   for (let number = 1; number <= pdf.numPages; number += 1) {
-    const page = await pdf.getPage(number);
-    const content = await page.getTextContent();
-    let line = "";
-    const lines: string[] = [];
-    for (const item of content.items) {
-      if (!("str" in item)) continue;
-      line += item.str;
-      if (item.hasEOL) {
-        lines.push(line.trimEnd());
-        line = "";
-      }
-    }
-    if (line) lines.push(line.trimEnd());
-    pages.push(lines.join("\n"));
+    const content = await (await pdf.getPage(number)).getTextContent();
+    const items = content.items.flatMap((item) =>
+      "str" in item ? [{ x: item.transform[4] as number, y: item.transform[5] as number, str: item.str }] : [],
+    );
+    pages.push(pageLines(items).join("\n"));
   }
-  return pages.join("\n\n");
+  return pages.map((text, index) => (index === 0 ? text : `--- page ${index + 1} ---\n\n${text}`)).join("\n\n");
 };
 
 /** A best guess from the file name; the user can change it before upload. */
