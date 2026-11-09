@@ -13,7 +13,7 @@ import { getDb, schema } from "../db/index.js";
 import type { EvidenceJson } from "../db/schema.js";
 import { type AuditRunResult, runAudit } from "./audit-runner.js";
 import { isStanding } from "./ledger.js";
-import { requireDocument, requireVendor } from "./records.js";
+import { markDocument, requireDocument, requireVendor } from "./records.js";
 import { newId, nowTimestamp } from "./session.js";
 import { type RawValue, parseTermValue } from "./term-values.js";
 
@@ -91,6 +91,7 @@ const proveRule = async (owner: string, vendorId: string, proof: ProofSpec, clai
   if (document.vendorId !== vendorId) fail("The proof document belongs to another vendor.", { errorCode: "wrong_vendor", statusCode: 400 });
   const result = matchEvidence(document.text, proof.quotes.map((quote) => ({ quote })), claim);
   if (!result.ok) fail(`Proof: ${result.message}`, { errorCode: result.errorCode, statusCode: 422 });
+  await markDocument(owner, document.id, "recorded");
   return { documentId: document.id, fragments: result.fragments };
 };
 

@@ -12,7 +12,7 @@ import { getDb, schema } from "../db/index.js";
 import { type DisputeLine, type Prose, composeDispute, guardProse, sortedLines } from "./dispute-compose.js";
 import { CHECK_LABELS } from "./format.js";
 import { isDeadline, isStanding } from "./ledger.js";
-import { requireDocument, requireVendor } from "./records.js";
+import { markDocument, requireDocument, requireVendor } from "./records.js";
 import { type ReplyOutcome, readCredit } from "./reply.js";
 import { newId, nowTimestamp } from "./session.js";
 
@@ -185,6 +185,7 @@ export const recordVendorReply = async (
       updatedAt: nowTimestamp(),
     })
     .where(and(eq(schema.disputes.ownerEmail, owner), eq(schema.disputes.id, input.disputeId)));
+  await markDocument(owner, document.id, "recorded");
   return disputeView(owner, input.disputeId);
 };
 
