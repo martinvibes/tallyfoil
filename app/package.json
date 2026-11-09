@@ -13,7 +13,8 @@
     "action": "agent-native action",
     "script": "agent-native script",
     "test": "vitest --run --passWithNoTests",
-    "agent-native:doctor": "agent-native doctor"
+    "agent-native:doctor": "agent-native doctor",
+    "replay-sample": "TALLYFOIL_AS_OF=${TALLYFOIL_AS_OF:-2026-11-09} tsx --env-file=.env scripts/replay-sample-reading.ts"
   },
   "dependencies": {
     "@agent-native/agentkit": "0.226.0",
