@@ -10,7 +10,7 @@ import { type DisputeView, findMoneyTokens, formatUsd } from "@/lib/tally";
 import { cn } from "@/lib/utils";
 import { OVERVIEW_PATH, pathForLocation } from "@shared/routes";
 
-import { CountUpMoney, LedgerHeading, SampleBadge, StatusChip } from "./primitives";
+import { CountUpMoney, SampleBadge } from "./primitives";
 
 type Field = "subject" | "intro" | "closing";
 type Prose = Record<Field, string>;
@@ -93,18 +93,24 @@ function Composer({ dispute }: { dispute: DisputeView }) {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 md:px-8">
-      <header className="space-y-4">
-        <Link to={pathForLocation({ view: "vendor", vendorId: dispute.vendor.id })} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+      <header className="night-panel space-y-4 rounded-2xl px-6 py-6 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.6)] md:px-8">
+        <Link
+          to={pathForLocation({ view: "vendor", vendorId: dispute.vendor.id })}
+          className="inline-flex items-center gap-1 font-figure text-[11px] uppercase tracking-[0.18em] text-white/45 hover:text-white"
+        >
           <IconArrowLeft className="size-3.5" /> {dispute.vendor.name}
         </Link>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2">
-              <LedgerHeading>Dispute to {dispute.vendor.name}</LedgerHeading>
-              <StatusChip status={dispute.status} />
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-figure text-[11px] uppercase tracking-[0.2em] text-white/45">Dispute to {dispute.vendor.name}</p>
+              <span className="rounded-sm border border-white/20 px-1.5 py-px font-figure text-[10px] uppercase tracking-wide text-white/70">{dispute.status}</span>
               {dispute.vendor.isSample && <SampleBadge />}
             </div>
-            <CountUpMoney cents={dispute.totalCents} className="mt-1 block text-5xl leading-none text-notch" />
+            <CountUpMoney cents={dispute.totalCents} className="silver-text ledger-numeral mt-1 block text-6xl leading-none" />
+            <p className="mt-2 text-xs text-white/50">
+              {dispute.lines.length} itemized charge{dispute.lines.length === 1 ? "" : "s"}, every one quoted from both documents
+            </p>
           </div>
           <GuardBadge invented={invented.length} verified={verified.length} />
         </div>
@@ -185,7 +191,9 @@ function GuardBadge({ invented, verified }: { invented: number; verified: number
       aria-live="polite"
       className={cn(
         "flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors",
-        blocked ? "guard-shake border-notch bg-notch/10 text-notch" : "border-verified/40 bg-verified/10 text-verified",
+        blocked
+          ? "guard-shake border-[#ff4d2e]/70 bg-[#ff4d2e]/15 text-[#ff8a6b] shadow-[0_0_40px_-10px_#ff4d2e]"
+          : "border-[#45d4bf]/40 bg-[#45d4bf]/10 text-[#7fe6d6] shadow-[0_0_40px_-16px_#45d4bf]",
       )}
     >
       {blocked ? <IconShieldX className="size-5" /> : <IconShieldCheck className="size-5" />}
